@@ -167,6 +167,7 @@
     });
 
     U.$('#btnGenerate').addEventListener('click', generateCode);
+    U.$('#btnRun').addEventListener('click', () => global.RUNNER.openModal());
 
     U.$('#btnPreview').addEventListener('click', () => global.PREVIEW.open());
     U.$('#btnZoomIn').addEventListener('click', () => FLOW.zoom(1));

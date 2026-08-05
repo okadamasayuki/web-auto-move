@@ -31,6 +31,7 @@
     <button class="btn" id="btnImport" title="JSONを読み込む">📥 インポート</button>
     <button class="btn" id="btnExport" title="JSONで書き出す">📤 エクスポート</button>
     <button class="btn btn-primary" id="btnGenerate" title="Pythonコードを生成">⚡ コード生成</button>
+    <button class="btn btn-run" id="btnRun" title="自分のPCの実行環境で、このフローを本当に動かす">▶ 実行</button>
     <button class="btn btn-icon" id="btnHelp" title="使い方">❓</button>
     <button class="btn btn-icon" id="btnTheme" title="テーマ切替">🌓</button>
     <input type="file" id="fileImport" accept=".json,application/json" hidden>
@@ -338,11 +339,14 @@
       <h4>6. データの保存先</h4>
       <p>フローはブラウザ内（IndexedDB）に自動保存されます。別のPCで使ったり共有したりする場合は <b>📤 エクスポート</b> でJSONファイルとして保存し、<b>📥 インポート</b> で読み込んでください。画像も含めて1ファイルにまとまります。<br><b>サーバーには何も送信されません。</b>すべてブラウザの中だけで動きます。</p>
 
-      <h4>7. 生成コードの実行方法</h4>
+      <h4>7. 実行のしかた（2通り）</h4>
+      <p><b>A. 「▶ 実行」ボタン（かんたん・おすすめ）</b><br>
+      画面右上の「▶ 実行」から、PCに置いた実行環境（<code>wam_runner.py</code>）に接続すると、<b>この画面から直接実行</b>できます。実行するとPC上でブラウザが立ち上がって実際に動き、ログがリアルタイムで流れ、フォルダに結果が溜まっていきます。初回だけ Python のインストールと実行環境の起動が必要です（手順は▶実行の画面内に表示されます）。</p>
+      <p><b>B. コードを自分で実行する</b></p>
       <pre class="help-pre">pip install playwright python-docx openpyxl
 python -m playwright install chromium
 python scraper.py</pre>
-      <p>最初は <b>ヘッドレス＝オフ</b>（ブラウザが見える状態）で動かし、意図通りか確認してからオンにするのがおすすめです。</p>
+      <p>どちらの場合も、最初は <b>ヘッドレス＝オフ</b>（ブラウザが見える状態）で動かし、意図通りか確認してからオンにするのがおすすめです。</p>
 
       <h4>7.5 実行の様子を「見る」2つの方法</h4>
       <ul>
@@ -356,6 +360,58 @@ python scraper.py</pre>
         <li><b>待機時間</b>を極端に短くすると相手のサーバーに負荷をかけます。開始ノードの「1件ごとの待ち時間」を適切に設定してください。</li>
         <li>ログインが必要なサイトでは、IDやパスワードをコードに直書きせず、<b>環境変数</b>を使う設定にできます（入力ノードの「環境変数から読む」）。</li>
       </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ モーダル：実行 ══════════════ -->
+<div class="modal" id="runModal" hidden>
+  <div class="modal-box modal-lg">
+    <div class="modal-head">
+      <h3>▶ 実行（自分のPCで本当に動かす）</h3>
+      <span id="runnerBadge" class="runner-badge">⚪ 未接続</span>
+      <button class="btn btn-icon modal-close" data-close="runModal">✕</button>
+    </div>
+    <div class="modal-content">
+
+      <!-- 未接続：セットアップ手順 -->
+      <div id="runSetup">
+        <p class="modal-lead">ブラウザ単体では他のサイトの操作やフォルダへの保存ができないため、
+        PCに小さな「実行環境」（Pythonファイル1個）を置いて、そこと通信して実行します。<b>初回だけ以下の準備が必要です。</b></p>
+        <ol class="run-steps">
+          <li><b>Python を入れる</b>（済んでいれば飛ばす）… <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a> から。Windowsは「Add python.exe to PATH」にチェック。</li>
+          <li><b><a href="wam_runner.py" download class="bm-link">📥 実行環境ファイルをダウンロード</a></b>（wam_runner.py）</li>
+          <li>ダウンロードしたファイルを<b>ダブルクリック</b>（またはターミナルで <code>python wam_runner.py</code>）。黒い画面が開いて<b>「接続コード」</b>が表示されます。初回は playwright のインストールを聞かれるので <code>y</code> を入力。</li>
+          <li>その接続コードを下に入力して「接続」。</li>
+        </ol>
+        <div class="field-row">
+          <div class="field field-narrow" style="flex-basis:220px">
+            <label for="runnerUrl">実行環境のアドレス</label>
+            <input type="text" id="runnerUrl" value="http://127.0.0.1:8765" spellcheck="false">
+          </div>
+          <div class="field">
+            <label for="runnerToken">接続コード（黒い画面に表示された8桁）</label>
+            <input type="text" id="runnerToken" placeholder="例）A1B2C3D4" spellcheck="false" style="font-family:var(--mono);text-transform:uppercase">
+          </div>
+          <button class="btn btn-primary" id="btnRunnerConnect">🔌 接続</button>
+        </div>
+        <p class="field-help">実行環境は 127.0.0.1（このPCの中）だけで待ち受け、接続コードを知らないWebページからは実行できません。黒い画面は実行中ずっと開いたままにしてください。</p>
+      </div>
+
+      <!-- 接続済み：実行パネル -->
+      <div id="runPanel" hidden>
+        <div id="runnerDeps" class="run-deps"></div>
+        <div class="run-actions">
+          <button class="btn btn-primary" id="btnRunFlow">▶ このフローを実行</button>
+          <button class="btn btn-danger-ghost" id="btnRunStop" disabled>⏹ 停止</button>
+          <button class="btn" id="btnRunReport" disabled>🖼 実行レポートを開く（開いた画面の記録）</button>
+        </div>
+        <div class="run-dir-row">📁 保存先: <code id="runDir">（実行すると表示されます）</code></div>
+        <pre id="runLog" class="run-log">ここに実行ログが流れます。
+「▶ このフローを実行」を押すと、PC上でブラウザが立ち上がって実際に動き始めます。
+最初は開始ノードの「ヘッドレス」をオフにしておくと、動く様子が目で見えます。</pre>
+      </div>
+
     </div>
   </div>
 </div>
@@ -375,6 +431,7 @@ python scraper.py</pre>
 <script src="js/codegen.js"></script>
 <script src="js/samples.js"></script>
 <script src="js/preview.js"></script>
+<script src="js/runner.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
