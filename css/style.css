@@ -741,6 +741,54 @@ kbd {
 .port-body { background: #cffafe; color: #0e7490; }
 .port-done { background: #f3e8ff; color: #7e22ce; }
 
+/* ─────────── 実行プレビュー（紙芝居） ─────────── */
+.pv-list { display: flex; flex-direction: column; gap: 8px; }
+.pv-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--bg-panel-2); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 10px 12px; cursor: pointer;
+  transition: border-color .12s, transform .08s;
+}
+.pv-item:hover { border-color: var(--accent); transform: translateX(2px); }
+.pv-no {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-size: 12px; font-weight: 700;
+  display: grid; place-items: center; margin-top: 2px;
+}
+.pv-main { flex: 1; min-width: 0; }
+.pv-title { display: flex; align-items: center; gap: 7px; font-size: 13.5px; flex-wrap: wrap; }
+.pv-ico {
+  width: 24px; height: 24px; border-radius: 6px; display: grid; place-items: center;
+  font-size: 13px; background: var(--nc, var(--accent-soft)); flex-shrink: 0;
+}
+.pv-tag {
+  font-size: 10.5px; font-weight: 700; color: var(--accent);
+  background: var(--accent-soft); border-radius: 20px; padding: 1px 8px;
+}
+.pv-action { font-size: 12px; color: var(--fg-muted); margin-top: 3px; word-break: break-all; }
+.pv-thumb { flex-shrink: 0; width: 180px; }
+.pv-thumb img {
+  width: 100%; display: block; border-radius: 7px;
+  border: 1px solid var(--border-strong); background: var(--bg-panel);
+}
+.pv-thumb-empty {
+  font-size: 10.5px; color: var(--fg-faint); text-align: center;
+  border: 1px dashed var(--border-strong); border-radius: 7px; padding: 14px 6px;
+}
+.pv-divider {
+  font-size: 11.5px; font-weight: 700; color: var(--fg-muted);
+  padding: 2px 4px 2px 14px; position: relative;
+}
+.pv-divider::before {
+  content: ''; position: absolute; left: 2px; top: 50%;
+  width: 7px; height: 7px; border-radius: 50%; transform: translateY(-50%);
+  background: var(--edge);
+}
+@media (max-width: 640px) {
+  .pv-item { flex-wrap: wrap; }
+  .pv-thumb { width: 100%; }
+}
+
 /* ─────────── トースト ─────────── */
 .toast-wrap {
   position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);

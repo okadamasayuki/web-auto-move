@@ -168,6 +168,7 @@
 
     U.$('#btnGenerate').addEventListener('click', generateCode);
 
+    U.$('#btnPreview').addEventListener('click', () => global.PREVIEW.open());
     U.$('#btnZoomIn').addEventListener('click', () => FLOW.zoom(1));
     U.$('#btnZoomOut').addEventListener('click', () => FLOW.zoom(-1));
     U.$('#btnZoomReset').addEventListener('click', () => FLOW.zoomReset());

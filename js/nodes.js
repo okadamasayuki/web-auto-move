@@ -132,6 +132,11 @@
           help: 'オンにすると Cookie 等を state.json に保存します。2回目以降はログイン操作を飛ばせます。' },
         { key: 'keep_open', type: 'checkbox', label: '終了後もブラウザを開いたままにする', default: false,
           help: '最後の画面を目視で確認したいときに便利です（Enterを押すまで閉じません）。' },
+        { key: 'record_preview', type: 'checkbox', label: '実行レポートを作る（開いた画面を記録）', default: true,
+          help: '各ステップで画面を撮影し、output/run_report.html に「どの画面が開いてどう進んだか」を画像つきで記録します。実行中もこのファイルをブラウザで開けば、5秒ごとの自動更新で進み具合を見られます。ヘッドレスでも確認できるようになります。' },
+        { key: 'preview_limit', type: 'number', label: '記録する画像の上限（枚）', default: 150, min: 10, step: 10,
+          showIf: d => d.record_preview !== false,
+          help: '大量の繰り返しでディスクを使いすぎないための上限。超えた分は文字だけ記録します。' },
         { key: 'on_error', type: 'select', label: 'エラーが起きたとき', default: 'screenshot_stop',
           options: [
             ['screenshot_stop', 'スクショを撮って停止する'],

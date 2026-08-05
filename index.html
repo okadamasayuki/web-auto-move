@@ -61,6 +61,7 @@
         <button class="btn btn-sm" id="btnFit" title="全体を表示">⛶ 全体表示</button>
       </div>
       <div class="ct-group">
+        <button class="btn btn-sm" id="btnPreview" title="実行される順番を紙芝居で確認">▶ プレビュー</button>
         <button class="btn btn-sm" id="btnAutoLayout" title="ノードを自動整列">✨ 自動整列</button>
         <button class="btn btn-sm" id="btnValidate" title="フローの問題を確認">🩺 チェック</button>
         <button class="btn btn-sm btn-danger-ghost" id="btnDeleteSel" title="選択中のノードを削除 (Delete)">🗑 削除</button>
@@ -332,6 +333,12 @@ python -m playwright install chromium
 python scraper.py</pre>
       <p>最初は <b>ヘッドレス＝オフ</b>（ブラウザが見える状態）で動かし、意図通りか確認してからオンにするのがおすすめです。</p>
 
+      <h4>7.5 実行の様子を「見る」2つの方法</h4>
+      <ul>
+        <li><b>▶ プレビュー</b>（キャンバス上部のボタン） … 実行前に、フローが動く順番を紙芝居のように確認できます。各ノードに付けたスクショが順に並びます。</li>
+        <li><b>実行レポート</b> … 実行すると <code>output/run_report.html</code> に「実際に開いた画面」が1ステップずつ画像つきで記録されます。実行中にブラウザで開くと5秒ごとに自動更新されるので、ヘッドレス実行でも進み具合が見えます。開始ノードの「実行レポートを作る」でオン／オフできます（既定はオン）。</li>
+      </ul>
+
       <h4>8. 使うときの注意</h4>
       <ul>
         <li>対象サイトの<b>利用規約・robots.txt</b> を確認してください。自動アクセスを禁じているサイトがあります。</li>
@@ -356,6 +363,7 @@ python scraper.py</pre>
 <script src="js/inspector.js"></script>
 <script src="js/codegen.js"></script>
 <script src="js/samples.js"></script>
+<script src="js/preview.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
