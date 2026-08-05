@@ -113,6 +113,78 @@
       }
     },
 
+    /* ══════════ 2.6 実戦テンプレート：契約書の一括収集 ══════════ */
+    {
+      key: 'contract-harvest',
+      icon: '⭐',
+      title: '実戦：一覧を順に開いて契約書を全部保存',
+      desc: 'ホバーメニュー→検索→一覧のリンクを上から順に開き、タイトル入力欄から名前を取って「番号_タイトル」フォルダを作成。契約書ファイルを全部保存してメモを残し、一覧に戻って次へ…を、ページ送りしながら100件でも繰り返す構成の見本。セレクタ（例）を自分のサイトのものに差し替えて使ってください。',
+      meta: 'ノード18個 / 実戦テンプレート',
+      graph: {
+        name: 'テンプレ：契約書の一括収集',
+        nodes: [
+          { id: 's1', type: 'start', title: '開始（自分のサイトのURLに変更）', x: 60, y: 60,
+            data: { url: 'https://example.com/', base_dir: 'output', polite_wait: 1.5,
+                    on_error: 'screenshot_continue', headless: false } },
+          { id: 'h1', type: 'hover', title: 'メニューにマウスを乗せる', x: 340, y: 60,
+            data: { target: t('.global-nav .menu-parent'), wait_ms: 600 } },
+          { id: 'c1', type: 'click', title: '開いたメニューの項目を押す', x: 620, y: 60,
+            data: { target: t('.global-nav .dropdown a.item'), wait_after: 'load' } },
+          { id: 'in1', type: 'input', title: '絞り込み条件を入力', x: 900, y: 60,
+            data: { target: t('input[name="keyword"]'), value: '検索キーワード（例）',
+                    clear_first: true, wait_after: 'none' } },
+          { id: 'sel1', type: 'select_option', title: 'プルダウンで種類を選ぶ', x: 1180, y: 60,
+            data: { target: t('select[name="category"]'), by: 'label', value: '契約書類（例）' } },
+          { id: 'c2', type: 'click', title: '検索ボタンを押す（あれば）', x: 1460, y: 60,
+            data: { target: { strategy: 'role', role: 'button', name: '検索' },
+                    optional: true, wait_after: 'load' } },
+          { id: 'lpP', type: 'loop', title: 'ページ送り（次へが無くなるまで）', x: 60, y: 320,
+            data: { mode: 'pages', target: t('.pagination a.next'), max_pages: 10,
+                    continue_on_error: true } },
+          { id: 'lpE', type: 'loop', title: '並んだリンクの数だけ', x: 340, y: 340,
+            data: { mode: 'elements', elements_target: t('.result-list .result-item a.title'),
+                    limit: 0, continue_on_error: true } },
+          { id: 'sn', type: 'script', title: '通し番号を+1', x: 620, y: 340,
+            data: { code: '# ページをまたいでも 1, 2, 3… と続く通し番号\nctx["番号"] = int(ctx.get("番号", 0)) + 1\nlog(f"  🔢 通し番号: {ctx[\'番号\']}")\n',
+                    provides: '番号' } },
+          { id: 'ck', type: 'click', title: '上から順にリンクを開く', x: 900, y: 340,
+            data: { target: { strategy: 'css', selector: '.result-list .result-item a.title', index: 'loop' },
+                    wait_after: 'load' } },
+          { id: 'exT', type: 'extract', title: 'タイトルを入力欄から取得', x: 1180, y: 340,
+            data: { target: t('input.title-field'), attr: 'value', var_name: 'タイトル',
+                    trim: true, default_value: '無題' } },
+          { id: 'md', type: 'mkdir', title: '「番号_タイトル」フォルダ作成', x: 1460, y: 340,
+            data: { path: '{{番号}}_{{タイトル}}', var_name: 'folder' } },
+          { id: 'lpD', type: 'loop', title: '契約書ファイルの数だけ', x: 60, y: 600,
+            data: { mode: 'elements', elements_target: t('a[href$=".pdf"]'),
+                    limit: 0, continue_on_error: true } },
+          { id: 'dl', type: 'download', title: 'ファイルを順に保存', x: 340, y: 620,
+            data: { target: { strategy: 'css', selector: 'a[href$=".pdf"]', index: 'loop' },
+                    dir: '{{番号}}_{{タイトル}}', filename: '', var_name: 'last_download',
+                    skip_existing: true, optional: true, timeout: 180 } },
+          { id: 'exM', type: 'extract', title: '控えたい文言を取得', x: 620, y: 640,
+            data: { target: t('.summary'), attr: 'text', var_name: '抜き書き',
+                    trim: true, default_value: '' } },
+          { id: 'memo', type: 'save_text', title: 'メモを同じフォルダへ', x: 900, y: 640,
+            data: { dir: '{{番号}}_{{タイトル}}', filename: 'メモ.txt', mode: 'write', encoding: 'utf-8',
+                    content: '番号: {{番号}}\nタイトル: {{タイトル}}\nURL: {{page_url}}\n取得日時: {{now}}\n--- 控え ---\n{{抜き書き}}' } },
+          { id: 'bk', type: 'goto', title: '一覧ページへ戻る', x: 1180, y: 640,
+            data: { mode: 'back', wait_until: 'load' } },
+          { id: 'fin', type: 'log', title: '全ページ完了', x: 1460, y: 640,
+            data: { message: '全ページの処理が終わりました。output フォルダと run_report.html を確認してください。' } }
+        ],
+        edges: [
+          e('s1', 'h1'), e('h1', 'c1'), e('c1', 'in1'), e('in1', 'sel1'), e('sel1', 'c2'),
+          e('c2', 'lpP'),
+          e('lpP', 'lpE', 'body'),
+          e('lpE', 'sn', 'body'), e('sn', 'ck'), e('ck', 'exT'), e('exT', 'md'), e('md', 'lpD'),
+          e('lpD', 'dl', 'body'),
+          e('lpD', 'exM', 'done'), e('exM', 'memo'), e('memo', 'bk'),
+          e('lpP', 'fin', 'done')
+        ]
+      }
+    },
+
     /* ══════════ 3. CSVのURLを順に処理 ══════════ */
     {
       key: 'csv-batch',
