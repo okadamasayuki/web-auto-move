@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Web Auto Move — スクレイピング自動生成スタジオ</title>
+<meta name="description" content="スクリーンショットに赤枠を引いて、ノードを矢印でつなぐだけで Playwright(Python) のスクレイピングコードを自動生成します。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ══════════════ ヘッダー ══════════════ -->
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">🕸️</span>
+    <div class="brand-text">
+      <strong>Web Auto Move</strong>
+      <small>スクレイピング自動生成スタジオ</small>
+    </div>
+  </div>
+
+  <div class="project-name-wrap">
+    <input id="projectName" class="project-name" value="新しいフロー" spellcheck="false" aria-label="プロジェクト名">
+    <span id="saveState" class="save-state">保存済み</span>
+  </div>
+
+  <div class="topbar-actions">
+    <button class="btn" id="btnNew" title="新規フロー">🗒️ 新規</button>
+    <button class="btn" id="btnSamples" title="サンプルを読み込む">📚 サンプル</button>
+    <button class="btn" id="btnImport" title="JSONを読み込む">📥 インポート</button>
+    <button class="btn" id="btnExport" title="JSONで書き出す">📤 エクスポート</button>
+    <button class="btn btn-primary" id="btnGenerate" title="Pythonコードを生成">⚡ コード生成</button>
+    <button class="btn btn-icon" id="btnHelp" title="使い方">❓</button>
+    <button class="btn btn-icon" id="btnTheme" title="テーマ切替">🌓</button>
+    <input type="file" id="fileImport" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- ══════════════ 左：ノードパレット ══════════════ -->
+  <aside class="palette" id="palette">
+    <div class="palette-head">
+      <h2>ノード</h2>
+      <p>クリック、またはキャンバスへドラッグ</p>
+    </div>
+    <div class="palette-search">
+      <input type="search" id="paletteSearch" placeholder="🔍 ノードを検索…" aria-label="ノード検索">
+    </div>
+    <div class="palette-list" id="paletteList"><!-- JSで生成 --></div>
+  </aside>
+
+  <!-- ══════════════ 中央：フローキャンバス ══════════════ -->
+  <main class="canvas-area">
+    <div class="canvas-toolbar">
+      <div class="ct-group">
+        <button class="btn btn-sm" id="btnZoomOut" title="縮小">−</button>
+        <button class="btn btn-sm" id="btnZoomReset" title="100%に戻す"><span id="zoomLabel">100%</span></button>
+        <button class="btn btn-sm" id="btnZoomIn" title="拡大">＋</button>
+        <button class="btn btn-sm" id="btnFit" title="全体を表示">⛶ 全体表示</button>
+      </div>
+      <div class="ct-group">
+        <button class="btn btn-sm" id="btnAutoLayout" title="ノードを自動整列">✨ 自動整列</button>
+        <button class="btn btn-sm" id="btnValidate" title="フローの問題を確認">🩺 チェック</button>
+        <button class="btn btn-sm btn-danger-ghost" id="btnDeleteSel" title="選択中のノードを削除 (Delete)">🗑 削除</button>
+      </div>
+      <div class="ct-group ct-hint">
+        <span>ドラッグ=移動 / 右の●から線を引く / ホイール=ズーム / Space+ドラッグ=画面移動</span>
+      </div>
+    </div>
+
+    <div class="canvas-viewport" id="viewport">
+      <div class="canvas-world" id="world">
+        <svg class="edge-layer" id="edgeLayer" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke"></path>
+            </marker>
+          </defs>
+          <g id="edgeGroup"></g>
+          <path id="ghostEdge" class="ghost-edge" d=""></path>
+        </svg>
+        <div class="node-layer" id="nodeLayer"></div>
+      </div>
+
+      <div class="canvas-empty" id="canvasEmpty">
+        <div class="ce-inner">
+          <div class="ce-icon">🧩</div>
+          <h3>まだノードがありません</h3>
+          <p>左のパレットからノードを追加するか、<br>「📚 サンプル」で完成済みのフローを読み込んでください。</p>
+          <button class="btn btn-primary" id="btnQuickStart">▶ 最初のノードを置く</button>
+        </div>
+      </div>
+
+      <div class="minimap" id="minimap" title="ミニマップ">
+        <canvas id="minimapCanvas" width="180" height="120"></canvas>
+        <div class="minimap-view" id="minimapView"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ══════════════ 右：インスペクタ ══════════════ -->
+  <aside class="inspector" id="inspector">
+    <div class="inspector-empty" id="inspectorEmpty">
+      <div class="ie-icon">👈</div>
+      <h3>ノードを選択</h3>
+      <p>キャンバス上のノードをクリックすると、<br>ここで詳細を設定できます。</p>
+      <div class="ie-tips">
+        <h4>はじめの一歩</h4>
+        <ol>
+          <li><b>開始</b>ノードに対象サイトのURLを入れる</li>
+          <li><b>クリック</b>ノードを足して、スクショをアップし赤枠で囲む</li>
+          <li>開発者ツールでコピーしたHTMLを貼り、セレクタを自動推定</li>
+          <li>ノード同士を矢印でつなぐ</li>
+          <li><b>⚡ コード生成</b>でPythonコードを取得</li>
+        </ol>
+      </div>
+    </div>
+    <div class="inspector-body" id="inspectorBody" hidden></div>
+  </aside>
+</div>
+
+<!-- ══════════════ モーダル：注釈エディタ ══════════════ -->
+<div class="modal" id="annotatorModal" hidden>
+  <div class="modal-box modal-xl">
+    <div class="modal-head">
+      <h3>🖍️ スクリーンショットに印をつける</h3>
+      <button class="btn btn-icon modal-close" data-close="annotatorModal">✕</button>
+    </div>
+    <div class="annotator">
+      <div class="anno-tools">
+        <div class="tool-group">
+          <span class="tool-label">ツール</span>
+          <button class="tool active" data-tool="rect" title="赤枠で囲む">▭ 赤枠</button>
+          <button class="tool" data-tool="mark" title="蛍光ペンで塗る">🖍 蛍光ペン</button>
+          <button class="tool" data-tool="arrow" title="矢印で指す">↗ 矢印</button>
+          <button class="tool" data-tool="pick" title="ここをクリック指定（1点）">📍 ポイント</button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label">色</span>
+          <button class="swatch active" data-color="#ef4444" style="--sw:#ef4444" title="赤"></button>
+          <button class="swatch" data-color="#f59e0b" style="--sw:#f59e0b" title="オレンジ"></button>
+          <button class="swatch" data-color="#22c55e" style="--sw:#22c55e" title="緑"></button>
+          <button class="swatch" data-color="#3b82f6" style="--sw:#3b82f6" title="青"></button>
+          <button class="swatch" data-color="#a855f7" style="--sw:#a855f7" title="紫"></button>
+        </div>
+        <div class="tool-group">
+          <span class="tool-label">ラベル</span>
+          <input type="text" id="annoLabel" placeholder="例）ログインボタン" maxlength="40">
+        </div>
+        <div class="tool-group tool-group-right">
+          <button class="btn btn-sm" id="annoUndo">↶ 一つ戻す</button>
+          <button class="btn btn-sm btn-danger-ghost" id="annoClear">全消去</button>
+        </div>
+      </div>
+      <div class="anno-stage" id="annoStage">
+        <div class="anno-drop" id="annoDrop">
+          <div class="ad-icon">🖼️</div>
+          <p><b>画像をドラッグ＆ドロップ</b> / クリックして選択 / <b>Ctrl+V で貼り付け</b></p>
+          <small>Windowsなら Win+Shift+S 、Macなら Cmd+Shift+4 で撮ったスクショをそのまま貼れます</small>
+          <input type="file" id="annoFile" accept="image/*" hidden>
+        </div>
+        <div class="anno-canvas-wrap" id="annoCanvasWrap" hidden>
+          <img id="annoImg" alt="スクリーンショット">
+          <canvas id="annoCanvas"></canvas>
+        </div>
+      </div>
+      <div class="anno-foot">
+        <span class="anno-hint" id="annoHint">画像を読み込むと描き込めます。押したい場所を囲んでください。</span>
+        <div>
+          <button class="btn" data-close="annotatorModal">キャンセル</button>
+          <button class="btn btn-primary" id="annoSave">この内容で保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ モーダル：セレクタ推定 ══════════════ -->
+<div class="modal" id="selectorModal" hidden>
+  <div class="modal-box modal-lg">
+    <div class="modal-head">
+      <h3>🎯 HTMLからセレクタを自動推定</h3>
+      <button class="btn btn-icon modal-close" data-close="selectorModal">✕</button>
+    </div>
+    <div class="modal-content">
+      <div class="howto-box">
+        <b>やり方（Chrome / Edge）</b>
+        <ol>
+          <li>対象のサイトで、押したいボタンを<b>右クリック → 検証</b></li>
+          <li>青くハイライトされた行を<b>右クリック → Copy → Copy outerHTML</b></li>
+          <li>下の枠に<b>貼り付け（Ctrl+V）</b></li>
+        </ol>
+        <small>ページ全体のHTMLを貼っても構いません。その場合は「絞り込みキーワード」に、ボタンに表示されている文字（例：ログイン）を入れてください。</small>
+      </div>
+
+      <div class="field">
+        <label for="selHtml">HTML を貼り付け</label>
+        <textarea id="selHtml" rows="8" spellcheck="false"
+          placeholder="&lt;button id=&quot;login-btn&quot; class=&quot;btn primary&quot; type=&quot;submit&quot;&gt;ログイン&lt;/button&gt;"></textarea>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="selKeyword">絞り込みキーワード（任意）</label>
+          <input type="text" id="selKeyword" placeholder="例）ログイン / 次へ / ダウンロード">
+        </div>
+        <div class="field field-narrow">
+          <label for="selPurpose">用途</label>
+          <select id="selPurpose">
+            <option value="click">クリックする要素</option>
+            <option value="input">文字を入れる欄</option>
+            <option value="text">文字を取り出す要素</option>
+            <option value="list">一覧（繰り返し）の1件</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" id="btnAnalyze">🔎 解析する</button>
+      </div>
+
+      <div id="selResults" class="sel-results"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ モーダル：コード出力 ══════════════ -->
+<div class="modal" id="codeModal" hidden>
+  <div class="modal-box modal-xl">
+    <div class="modal-head">
+      <h3>⚡ 生成されたコード</h3>
+      <div class="modal-head-actions">
+        <button class="btn btn-sm" id="btnCopyCode">📋 コピー</button>
+        <button class="btn btn-sm" id="btnDownloadCode">💾 ファイル保存</button>
+        <button class="btn btn-sm" id="btnDownloadAll">📦 一式ダウンロード</button>
+        <button class="btn btn-icon modal-close" data-close="codeModal">✕</button>
+      </div>
+    </div>
+    <div class="code-tabs" id="codeTabs">
+      <button class="code-tab active" data-file="scraper.py">scraper.py</button>
+      <button class="code-tab" data-file="requirements.txt">requirements.txt</button>
+      <button class="code-tab" data-file="README.md">実行手順</button>
+      <button class="code-tab" data-file="__issues__">🩺 チェック結果 <span class="badge" id="issueBadge" hidden>0</span></button>
+    </div>
+    <div class="code-view">
+      <pre id="codeOut" class="code-pre"><code id="codeCode"></code></pre>
+      <div id="issuesOut" class="issues-out" hidden></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ モーダル：サンプル ══════════════ -->
+<div class="modal" id="samplesModal" hidden>
+  <div class="modal-box modal-lg">
+    <div class="modal-head">
+      <h3>📚 サンプルフロー</h3>
+      <button class="btn btn-icon modal-close" data-close="samplesModal">✕</button>
+    </div>
+    <div class="modal-content">
+      <p class="modal-lead">よくあるパターンをそのまま読み込めます。読み込むと現在のフローは置き換わります（先にエクスポートしておくと安心です）。</p>
+      <div class="sample-grid" id="sampleGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ モーダル：ヘルプ ══════════════ -->
+<div class="modal" id="helpModal" hidden>
+  <div class="modal-box modal-lg">
+    <div class="modal-head">
+      <h3>❓ 使い方ガイド</h3>
+      <button class="btn btn-icon modal-close" data-close="helpModal">✕</button>
+    </div>
+    <div class="modal-content help-content">
+      <h4>1. 全体の流れ</h4>
+      <p>このツールは「<b>ブラウザで人間がやる操作</b>」をノードに並べて矢印でつなぐと、それを再現する <b>Playwright (Python)</b> のプログラムを書き出します。書き出したコードを自分のPCで実行すれば、同じ作業を何百回・何千回でも自動で繰り返せます。</p>
+      <ol>
+        <li><b>開始</b>ノードに、最初に開くURLを入れる</li>
+        <li>やりたい操作のノード（クリック／入力／情報取得／ダウンロード…）を足す</li>
+        <li>各ノードで <b>スクショに赤枠</b> を引き、<b>HTMLを貼ってセレクタを推定</b></li>
+        <li>ノードの右の●から次のノードへ<b>矢印</b>をつなぐ</li>
+        <li><b>⚡ コード生成</b> → コードをコピーして実行</li>
+      </ol>
+
+      <h4>2. セレクタって何？</h4>
+      <p>プログラムは画像を見て「このボタン」を判断できません。ページの中の場所を表す住所のような文字列が<b>セレクタ</b>です（例：<code>#login-btn</code>）。<br>
+      このツールでは、開発者ツールでコピーしたHTMLを貼り付けると、壊れにくいセレクタの候補を自動で並べて提案します。赤枠のスクショは「人間が後から見て分かるようにするためのメモ」として保存され、生成コードにもコメントとして残ります。</p>
+      <div class="help-note">
+        <b>開発者ツールでHTMLをコピーする手順</b>
+        <ol>
+          <li>対象のボタンを右クリック →「検証」（Inspect）</li>
+          <li>ハイライトされた行を右クリック → Copy → <b>Copy outerHTML</b></li>
+          <li>ツール内の「HTMLを貼り付け」に Ctrl+V</li>
+        </ol>
+      </div>
+
+      <h4>3. 変数（前のノードの結果を使う）</h4>
+      <p><b>情報取得</b>ノードで取り出した値には名前（変数名）を付けられます。以降のノードの文章欄で <code>{{変数名}}</code> と書くと、その値が差し込まれます。</p>
+      <ul>
+        <li><code>{{商品名}}</code> … 情報取得ノードで付けた名前</li>
+        <li><code>{{index}}</code> … 繰り返しの何番目か（1から）</li>
+        <li><code>{{item.タイトル}}</code> … 一覧取得＋繰り返しのときの各項目</li>
+        <li><code>{{today}}</code> / <code>{{now}}</code> / <code>{{timestamp}}</code> … 日付・時刻</li>
+        <li><code>{{page_title}}</code> / <code>{{page_url}}</code> … 今開いているページ</li>
+        <li><code>{{last_download}}</code> … 直前にダウンロードしたファイルのパス</li>
+      </ul>
+      <p>フォルダ名にも使えます。例：<code>出力/{{today}}/{{商品名}}</code> と書けば、日付と商品名でフォルダが自動的に分かれます。</p>
+
+      <h4>4. 何百回・何千回まわすには</h4>
+      <p><b>繰り返し</b>ノードを使います。出口が2つあり、<span class="port-demo port-body">くり返す</span>につないだ側が本体、<span class="port-demo port-done">終わったら</span>につないだ側がループ後の処理です。</p>
+      <ul>
+        <li><b>回数を指定</b> … 単純にN回</li>
+        <li><b>一覧の各項目</b> … 「一覧取得」で集めた行の数だけ</li>
+        <li><b>CSVの各行</b> … 手元のCSVの行数だけ（URL一覧を流し込む用途に最適）</li>
+        <li><b>ページ送り</b> … 「次へ」ボタンが無くなるまで自動で進む</li>
+      </ul>
+
+      <h4>5. キーボード操作</h4>
+      <table class="kbd-table">
+        <tr><td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td>選択中のノードを削除</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>選択中のノードを複製</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>エクスポート（JSON保存）</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>コード生成</td></tr>
+        <tr><td><kbd>Space</kbd>+ドラッグ / 中ボタンドラッグ</td><td>画面を移動</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>選択解除／モーダルを閉じる</td></tr>
+      </table>
+
+      <h4>6. データの保存先</h4>
+      <p>フローはブラウザ内（IndexedDB）に自動保存されます。別のPCで使ったり共有したりする場合は <b>📤 エクスポート</b> でJSONファイルとして保存し、<b>📥 インポート</b> で読み込んでください。画像も含めて1ファイルにまとまります。<br><b>サーバーには何も送信されません。</b>すべてブラウザの中だけで動きます。</p>
+
+      <h4>7. 生成コードの実行方法</h4>
+      <pre class="help-pre">pip install playwright python-docx openpyxl
+python -m playwright install chromium
+python scraper.py</pre>
+      <p>最初は <b>ヘッドレス＝オフ</b>（ブラウザが見える状態）で動かし、意図通りか確認してからオンにするのがおすすめです。</p>
+
+      <h4>8. 使うときの注意</h4>
+      <ul>
+        <li>対象サイトの<b>利用規約・robots.txt</b> を確認してください。自動アクセスを禁じているサイトがあります。</li>
+        <li><b>待機時間</b>を極端に短くすると相手のサーバーに負荷をかけます。開始ノードの「1件ごとの待ち時間」を適切に設定してください。</li>
+        <li>ログインが必要なサイトでは、IDやパスワードをコードに直書きせず、<b>環境変数</b>を使う設定にできます（入力ノードの「環境変数から読む」）。</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ トースト ══════════════ -->
+<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+<!-- ══════════════ コンテキストメニュー ══════════════ -->
+<div class="ctx-menu" id="ctxMenu" hidden></div>
+
+<script src="js/util.js"></script>
+<script src="js/nodes.js"></script>
+<script src="js/selector.js"></script>
+<script src="js/annotator.js"></script>
+<script src="js/flow.js"></script>
+<script src="js/inspector.js"></script>
+<script src="js/codegen.js"></script>
+<script src="js/samples.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
