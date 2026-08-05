@@ -194,7 +194,17 @@
           <li>下の枠に<b>貼り付け（Ctrl+V）</b></li>
         </ol>
         <small>ページ全体のHTMLを貼っても構いません。その場合は「絞り込みキーワード」に、ボタンに表示されている文字（例：ログイン）を入れてください。</small>
+        <div class="bm-box">✨ もっと簡単に：<a id="bmLink" href="#" class="bm-link">🔖 要素コピーくん</a> を<b>ブックマークバーへドラッグして登録</b> → 対象サイトで押す → 押したい要素をクリックすると、そのHTMLが自動でコピーされます（ログイン後のページでもOK・Escで中止）。</div>
       </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="selUrl">URLからHTMLを取得してみる（公開ページ用・お試し）</label>
+          <input type="text" id="selUrl" placeholder="https://example.com/list" spellcheck="false">
+        </div>
+        <button class="btn" id="btnFetchUrl">🌐 取得</button>
+      </div>
+      <p class="field-help sel-fetch-note">外部の中継サービス（allorigins.win / corsproxy.io）を経由して取得します。<b>ログインが必要なページや社内サイトのURLは入れないでください</b>（中継サービスに渡ります）。取得できないサイトも多く、その場合は上の「Copy outerHTML」かブックマークレットを使ってください。</p>
 
       <div class="field">
         <label for="selHtml">HTML を貼り付け</label>
@@ -311,6 +321,7 @@
         <li><b>回数を指定</b> … 単純にN回</li>
         <li><b>一覧の各項目</b> … 「一覧取得」で集めた行の数だけ</li>
         <li><b>CSVの各行</b> … 手元のCSVの行数だけ（URL一覧を流し込む用途に最適）</li>
+        <li><b>画面に並んだ同じ要素の数だけ</b> … 並んだボタンやリンクを<b>1番目→2番目→3番目…と順番に押していく</b>操作用。本体のクリックノードで「複数見つかったとき → 🔁 繰り返しの何件目かに合わせる」を選びます。別ページへ移動する場合は、本体の最後に「ページ移動：前のページへ戻る」を入れて一覧に戻します（サンプル「並んだリンクを順番にクリック」参照）</li>
         <li><b>ページ送り</b> … 「次へ」ボタンが無くなるまで自動で進む</li>
       </ul>
 

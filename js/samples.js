@@ -74,6 +74,45 @@
       }
     },
 
+    /* ══════════ 2.5 並んだリンクを順番にクリック ══════════ */
+    {
+      key: 'click-each',
+      icon: '🖱️',
+      title: '並んだリンクを順番にクリック',
+      desc: '一覧に並んだ同じ形のリンクを上から順に1つずつ開き、詳細ページで情報を控えて一覧に戻る…を繰り返します。「次のやつ、また次のやつ」と押していく操作の見本です。',
+      meta: 'ノード7個 / 中級',
+      graph: {
+        name: 'サンプル：並んだリンクを順番にクリック',
+        nodes: [
+          { id: 's1', type: 'start', title: '開始', x: 60, y: 220,
+            data: { url: 'https://books.toscrape.com/', base_dir: 'output', polite_wait: 1,
+                    on_error: 'screenshot_continue' } },
+          { id: 'lp', type: 'loop', title: '並んだ本の数だけ', x: 340, y: 200,
+            data: { mode: 'elements', elements_target: t('article.product_pod h3 a'),
+                    limit: 5, continue_on_error: true },
+          },
+          { id: 'ck', type: 'click', title: '{{index}}番目の本を開く', x: 620, y: 80,
+            data: { target: { strategy: 'css', selector: 'article.product_pod h3 a', index: 'loop' },
+                    wait_after: 'load' } },
+          { id: 'ex', type: 'extract', title: 'タイトルを取得', x: 900, y: 80,
+            data: { target: t('h1'), attr: 'text', var_name: 'タイトル', trim: true } },
+          { id: 'ex2', type: 'extract', title: '価格を取得', x: 1180, y: 80,
+            data: { target: t('.price_color'), attr: 'text', var_name: '価格', trim: true } },
+          { id: 'sv', type: 'save_text', title: '結果を追記', x: 1460, y: 80,
+            data: { dir: '', filename: 'クリック結果.txt', mode: 'append', encoding: 'utf-8',
+                    content: '{{index}}. {{タイトル}}　{{価格}}　{{page_url}}' } },
+          { id: 'bk', type: 'goto', title: '一覧に戻る', x: 1740, y: 80,
+            data: { mode: 'back', wait_until: 'load' } },
+          { id: 'fin', type: 'log', title: '完了', x: 620, y: 380,
+            data: { message: '並んだリンクをすべて処理しました。' } }
+        ],
+        edges: [
+          e('s1', 'lp'), e('lp', 'ck', 'body'), e('ck', 'ex'), e('ex', 'ex2'),
+          e('ex2', 'sv'), e('sv', 'bk'), e('lp', 'fin', 'done')
+        ]
+      }
+    },
+
     /* ══════════ 3. CSVのURLを順に処理 ══════════ */
     {
       key: 'csv-batch',

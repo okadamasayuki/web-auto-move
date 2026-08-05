@@ -28,6 +28,84 @@
       });
       // 貼り付け直後に自動解析
       U.$('#selHtml').addEventListener('paste', () => setTimeout(() => this.run(), 60));
+
+      /* --- URLから取得（公開ページ用・お試し） --- */
+      U.$('#btnFetchUrl').addEventListener('click', () => this.fetchUrl());
+      U.$('#selUrl').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); this.fetchUrl(); }
+      });
+
+      /* --- ブックマークレット「要素コピーくん」 --- */
+      const bm = U.$('#bmLink');
+      if (bm) {
+        bm.setAttribute('href', this.bookmarkletCode());
+        bm.addEventListener('click', e => {
+          e.preventDefault();
+          U.toast('クリックではなく、このボタンをブックマークバーへドラッグして登録してください', 'info', 4000);
+        });
+      }
+    },
+
+    /** 対象サイト上で押した要素の outerHTML をコピーするブックマークレット */
+    bookmarkletCode() {
+      const src = "(()=>{if(window.__wamPick)return;window.__wamPick=1;" +
+        "var o=document.createElement('div');" +
+        "o.style.cssText='position:fixed;z-index:2147483647;pointer-events:none;border:3px solid #ef4444;background:rgba(239,68,68,.12);border-radius:4px;left:0;top:0;width:0;height:0';" +
+        "document.documentElement.appendChild(o);" +
+        "var mv=function(e){var r=e.target.getBoundingClientRect();o.style.left=r.left+'px';o.style.top=r.top+'px';o.style.width=r.width+'px';o.style.height=r.height+'px'};" +
+        "var end=function(){document.removeEventListener('mousemove',mv,true);document.removeEventListener('click',cl,true);document.removeEventListener('keydown',kd,true);o.remove();delete window.__wamPick};" +
+        "var kd=function(e){if(e.key==='Escape')end()};" +
+        "var cl=function(e){e.preventDefault();e.stopPropagation();var h=e.target.outerHTML;" +
+        "var done=function(){end();alert('コピーしました。Web Auto Move の\\u300cHTMLを貼り付け\\u300d欄に Ctrl+V してください。')};" +
+        "if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(h).then(done,function(){end();prompt('自動コピーできなかったので、全選択してコピーしてください',h)})}" +
+        "else{end();prompt('全選択してコピーしてください',h)}};" +
+        "document.addEventListener('mousemove',mv,true);document.addEventListener('click',cl,true);document.addEventListener('keydown',kd,true);" +
+        "alert('コピーしたい要素をクリックしてください（Escで中止）')})()";
+      return 'javascript:' + encodeURIComponent(src);
+    },
+
+    /** 公開CORS中継サービス経由でURLのHTMLを取ってみる（失敗も普通にある） */
+    async fetchUrl() {
+      const url = (U.$('#selUrl').value || '').trim();
+      if (!/^https?:\/\//i.test(url)) {
+        U.toast('http(s):// から始まるURLを入れてください', 'warn');
+        return;
+      }
+      const btn = U.$('#btnFetchUrl');
+      const oldLabel = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '取得中…';
+
+      const proxies = [
+        u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+        u => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
+      ];
+      let ok = false;
+      let lastErr = '';
+      for (const p of proxies) {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 15000);
+          const res = await fetch(p(url), { signal: ctrl.signal });
+          clearTimeout(timer);
+          if (!res.ok) { lastErr = 'HTTP ' + res.status; continue; }
+          let text = await res.text();
+          if (!text || text.length < 50) { lastErr = '中身が空でした'; continue; }
+          if (text.length > 3000000) text = text.slice(0, 3000000);
+          U.$('#selHtml').value = text;
+          U.toast('取得しました（' + U.formatBytes(text.length) + '）。キーワードで絞り込んで解析してください', 'ok', 4000);
+          this.run();
+          ok = true;
+          break;
+        } catch (err) {
+          lastErr = err && err.name === 'AbortError' ? '時間切れ' : (err && err.message) || '通信エラー';
+        }
+      }
+      if (!ok) {
+        U.toast('取得できませんでした（' + lastErr + '）。ブックマークレットか手動コピーをお使いください', 'err', 5000);
+      }
+      btn.disabled = false;
+      btn.textContent = oldLabel;
     },
 
     open(purpose, initialHtml, onPick) {
@@ -540,10 +618,21 @@
       U.el('div', { class: 'field', style: { marginBottom: 0 } }, [
         U.el('label', { text: '複数見つかったとき', style: { fontSize: '11px' } }),
         U.el('select', {
-          onchange: e => { t.index = Number(e.target.value); commit(); }
-        }, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i =>
-          U.el('option', { value: i, selected: Number(t.index || 0) === i ? true : null,
-                           text: i === 0 ? '最初の1つを使う' : (i + 1) + '番目を使う' })))
+          onchange: e => {
+            const v = e.target.value;
+            t.index = v === 'loop' ? 'loop' : Number(v);
+            commit(); render();
+          }
+        }, [['0', '最初の1つを使う'],
+            ['loop', '🔁 繰り返しの何件目かに合わせる（1回目→1番目…）'],
+            ['1', '2番目を使う'], ['2', '3番目を使う'], ['3', '4番目を使う'],
+            ['4', '5番目を使う'], ['5', '6番目を使う'], ['6', '7番目を使う'],
+            ['7', '8番目を使う'], ['8', '9番目を使う'], ['9', '10番目を使う']]
+          .map(o => U.el('option', {
+            value: o[0],
+            selected: String(t.index || 0) === o[0] ? true : null,
+            text: o[1]
+          })))
       ])
     ]);
     box.appendChild(idxRow);

@@ -774,8 +774,9 @@
     return h.length > max ? h.slice(0, max) + ' …' : h;
   }
 
-  /* ---------- ターゲット→Playwright ロケータ式 ---------- */
-  function locatorExpr(target, scopeVar) {
+  /* ---------- ターゲット→Playwright ロケータ式 ----------
+     opts.bare = true なら .first / .nth() を付けない（.all() や .count() 用） */
+  function locatorExpr(target, scopeVar, opts) {
     const scope = scopeVar || 'page';
     if (!target) return scope + '.locator("")';
     const s = target.strategy || 'css';
@@ -803,6 +804,11 @@
         break;
       default:
         base = scope + '.locator(' + q(target.selector) + ')';
+    }
+    if (opts && opts.bare) return base;
+    // 'loop' = 繰り返しの何件目かに合わせる（1回目→1番目、2回目→2番目…）
+    if (target.index === 'loop') {
+      return base + '.nth(int(ctx.get("index", 1)) - 1)';
     }
     const idx = Number(target.index || 0);
     return idx > 0 ? base + '.nth(' + idx + ')' : base + '.first';

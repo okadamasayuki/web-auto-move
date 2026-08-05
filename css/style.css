@@ -557,6 +557,18 @@ html[data-theme="dark"] .node-head { border-bottom-color: rgba(255,255,255,.07);
 .howto-box li { margin-bottom: 2px; }
 .howto-box small { color: var(--fg-muted); display: block; margin-top: 6px; }
 html[data-theme="dark"] .howto-box { color: var(--fg); }
+.bm-box {
+  margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--border-strong);
+  font-size: 12px; line-height: 1.7;
+}
+.bm-link {
+  display: inline-block; font-weight: 700; text-decoration: none;
+  background: var(--bg-panel); color: var(--accent);
+  border: 1.5px solid var(--accent); border-radius: 20px;
+  padding: 2px 12px; cursor: grab;
+}
+.bm-link:active { cursor: grabbing; }
+.sel-fetch-note { margin: -6px 0 14px; }
 
 /* セレクタ結果 */
 .sel-results { margin-top: 10px; }

@@ -57,8 +57,12 @@
   /* ターゲットを1行の説明文にする */
   function targetText(t) {
     if (!t) return '';
-    if (t.strategy === 'role') return (t.role || 'button') + ' 「' + (t.name || '') + '」';
-    return String(t.selector || '');
+    let s = t.strategy === 'role'
+      ? (t.role || 'button') + ' 「' + (t.name || '') + '」'
+      : String(t.selector || '');
+    if (t.index === 'loop') s += ' [{{index}}番目]';
+    else if (Number(t.index) > 0) s += ' [' + (Number(t.index) + 1) + '番目]';
+    return s;
   }
 
   function esc(s) { return U.escapeHtml(s); }
@@ -609,9 +613,17 @@
             ['count', '回数を指定して繰り返す'],
             ['list', '「一覧取得」の各項目について繰り返す'],
             ['csv', 'CSVファイルの各行について繰り返す'],
+            ['elements', '画面に並んだ同じ要素の数だけ（順番にクリック向け）'],
             ['pages', 'ページ送り（「次へ」が無くなるまで）']
           ] },
         { key: 'count', type: 'number', label: '回数', default: 10, min: 1, showIf: d => (d.mode || 'count') === 'count' },
+        Object.assign(targetField('数える要素（1件分）'), {
+          key: 'elements_target', showIf: d => d.mode === 'elements',
+          help: '並んでいるリンクやボタンの「1つ分」を指定します。見つかった個数だけ本体を繰り返します。' +
+                '本体のクリックノードで「複数見つかったとき → 🔁 繰り返しの何件目かに合わせる」を選ぶと、' +
+                '1回目は1番目、2回目は2番目…と順番に押していけます。' +
+                'クリックで別ページへ移動する場合は、本体の最後に「ページ移動：前のページへ戻る」を入れて一覧に戻してください。'
+        }),
         { key: 'list_var', type: 'text', label: '一覧の変数名', default: '一覧', showIf: d => d.mode === 'list',
           help: '「一覧取得」ノードで付けた名前。' },
         { key: 'csv_path', type: 'text', label: 'CSVファイルのパス', mono: true, default: 'input.csv',
@@ -638,6 +650,7 @@
         if (m === 'count') return esc((d.count || 10) + ' 回くり返す');
         if (m === 'list') return '{{' + esc(d.list_var || '一覧') + '}} の各項目';
         if (m === 'csv') return codeSpan(d.csv_path || 'input.csv') + ' の各行';
+        if (m === 'elements') return '並んだ ' + codeSpan(targetText(d.elements_target) || '未設定') + ' の数だけ';
         return 'ページ送り（最大' + esc(d.max_pages || 50) + 'ページ）';
       },
       chips: d => {
@@ -654,6 +667,9 @@
         }
         if (d.mode === 'list' && !d.list_var) o.push({ level: 'err', msg: '一覧の変数名が空です。' });
         if (d.mode === 'csv' && !d.csv_path) o.push({ level: 'err', msg: 'CSVのパスが空です。' });
+        if (d.mode === 'elements' && targetEmpty(d.elements_target)) {
+          o.push({ level: 'err', msg: '「数える要素」のセレクタが未設定です。' });
+        }
         if (graph && !graph.edges.some(e => e.from === node.id && e.port === 'body')) {
           o.push({ level: 'warn', msg: '「くり返す」の出口に何もつながっていません。中身が空のループになります。' });
         }
