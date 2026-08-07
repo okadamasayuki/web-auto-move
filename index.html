@@ -20,6 +20,11 @@
     </div>
   </div>
 
+  <nav class="view-tabs" aria-label="画面切替">
+    <button class="view-tab active" id="tabFlow" title="ノードをつないで自動化フローを作る">🧩 フロー</button>
+    <button class="view-tab" id="tabLab" title="HTMLを貼って、class や id からセレクタだけを抽出する">🎯 セレクタ抽出</button>
+  </nav>
+
   <div class="project-name-wrap">
     <input id="projectName" class="project-name" value="新しいフロー" spellcheck="false" aria-label="プロジェクト名">
     <span id="saveState" class="save-state">保存済み</span>
@@ -121,6 +126,62 @@
     </div>
     <div class="inspector-body" id="inspectorBody" hidden></div>
   </aside>
+</div>
+
+<!-- ══════════════ セレクタ抽出タブ（フローとは独立の道具） ══════════════ -->
+<div class="labview" id="labView" hidden>
+  <div class="lab-wrap">
+    <header class="lab-head">
+      <h2>🎯 セレクタ抽出ツール</h2>
+      <p>スクレイピングの要になる「セレクタ」——class や id などから作る、ページ内の要素の指し示し方——を、
+        HTMLを貼るだけでまとめて抽出します。フロー編集とは独立した道具です（各ノードの「🔎 HTMLから推定」は今までどおり使えます）。</p>
+    </header>
+
+    <div class="lab-grid">
+      <section class="lab-in">
+        <div class="howto-box">
+          <b>やり方（Chrome / Edge）</b>
+          <ol>
+            <li>対象のサイトで、調べたいあたりを<b>右クリック → 検証</b></li>
+            <li>青くハイライトされた行（少し外側の行でもOK）を<b>右クリック → Copy → Copy outerHTML</b></li>
+            <li>下の枠に<b>貼り付け（Ctrl+V）</b> → 自動で抽出されます</li>
+          </ol>
+          <small>ページ全体のHTMLでも、一部分だけでも構いません。多めに貼るほど「何件に当たるか」が正確になります。</small>
+          <div class="bm-box">✨ もっと簡単に：<a id="bmLinkLab" href="#" class="bm-link">🔖 要素コピーくん</a> を<b>ブックマークバーへドラッグして登録</b> → 対象サイトで押す → 調べたい要素をクリックすると、そのHTMLが自動でコピーされます。</div>
+        </div>
+
+        <div class="field">
+          <label for="labHtml">HTML を貼り付け</label>
+          <textarea id="labHtml" rows="13" spellcheck="false"
+            placeholder="&lt;ul class=&quot;product-list&quot;&gt;&#10;  &lt;li&gt;&lt;a class=&quot;item-title&quot; href=&quot;/item/1&quot;&gt;商品A&lt;/a&gt;…&#10;&lt;/ul&gt;"></textarea>
+        </div>
+
+        <div class="lab-actions">
+          <button class="btn btn-primary" id="labAnalyze">🔎 抽出する</button>
+          <button class="btn" id="labSample" title="お試し用のHTMLを入れる">🧪 サンプルで試す</button>
+          <button class="btn" id="labClear">クリア</button>
+        </div>
+      </section>
+
+      <section class="lab-out">
+        <div class="lab-filter">
+          <input type="search" id="labFilter" placeholder="🔍 結果を絞り込む（ボタンの文字・class名など）" aria-label="結果の絞り込み">
+          <span class="lab-scope" id="labScope"></span>
+        </div>
+        <div id="labResults" class="lab-results">
+          <div class="lab-empty">
+            <div class="le-icon">🎯</div>
+            <p>左にHTMLを貼って「🔎 抽出する」を押すと、<br>使えるセレクタがここに一覧で出ます。</p>
+            <ul class="le-legend">
+              <li>🔁 <b>並んでいる要素</b> — 一覧・繰り返しクリックの主役</li>
+              <li>🖱 <b>クリックできるもの</b> / ⌨️ <b>入力欄</b> / 📰 <b>見出し</b></li>
+              <li>🏷 <b>id / class の在庫</b> — 手で組みたい人向けの素材</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════ モーダル：注釈エディタ ══════════════ -->
@@ -298,7 +359,8 @@
 
       <h4>2. セレクタって何？</h4>
       <p>プログラムは画像を見て「このボタン」を判断できません。ページの中の場所を表す住所のような文字列が<b>セレクタ</b>です（例：<code>#login-btn</code>）。<br>
-      このツールでは、開発者ツールでコピーしたHTMLを貼り付けると、壊れにくいセレクタの候補を自動で並べて提案します。赤枠のスクショは「人間が後から見て分かるようにするためのメモ」として保存され、生成コードにもコメントとして残ります。</p>
+      このツールでは、開発者ツールでコピーしたHTMLを貼り付けると、壊れにくいセレクタの候補を自動で並べて提案します。赤枠のスクショは「人間が後から見て分かるようにするためのメモ」として保存され、生成コードにもコメントとして残ります。<br>
+      フローとは別に、画面上部の <b>🎯 セレクタ抽出</b> タブでは、HTMLを貼るだけで「使えるセレクタ」をまとめて棚卸しできます（並んでいる要素・ボタン・入力欄・id / class の在庫）。</p>
       <div class="help-note">
         <b>開発者ツールでHTMLをコピーする手順</b>
         <ol>
@@ -505,6 +567,7 @@ python scraper.py</pre>
 <script src="js/samples.js?v=dev"></script>
 <script src="js/preview.js?v=dev"></script>
 <script src="js/runner.js?v=dev"></script>
+<script src="js/lab.js?v=dev"></script>
 <script src="js/app.js?v=dev"></script>
 </body>
 </html>

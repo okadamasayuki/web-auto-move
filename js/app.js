@@ -23,6 +23,7 @@
     applyTheme(U.lsGet(LS_THEME, prefersDark() ? 'dark' : 'light'));
     FLOW.init();
     INSPECTOR.init();
+    if (global.LAB) LAB.init();
     buildPalette();
     bindTopbar();
     bindModals();

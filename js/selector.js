@@ -794,6 +794,189 @@
     return h.length > max ? h.slice(0, max) + ' …' : h;
   }
 
+  /* ══════════════════════════════════════════════════════════
+     公開API: catalog() — 貼られたHTMLから「使えるセレクタ」を棚卸しする
+     ──────────────────────────────────────────────────────────
+     analyze() が「狙いを1つ決めて候補を出す」のに対して、こちらは
+     ページ（または断片）に含まれる要素をまとめて調べ、
+       ・🔁 同じ形で並んでいるもの（一覧・繰り返し向き）
+       ・🖱 クリックできるもの
+       ・⌨️ 入力欄
+       ・📰 見出し
+       ・🏷 安定していそうな id / class の在庫
+     に分類して返す。セレクタ抽出タブで使う。
+     ══════════════════════════════════════════════════════════ */
+  function catalog(rawInput) {
+    const cls = classifyInput(rawInput);
+    if (cls.kind === 'empty') return { ok: false, message: 'HTML を貼り付けてください。' };
+    if (cls.kind !== 'html') {
+      return {
+        ok: false,
+        message: '貼られたのはHTMLではなく' + (cls.kind === 'xpath' ? 'XPath' : 'セレクタ文字列') +
+                 'のようです。対象サイトで右クリック → 検証 → 「Copy outerHTML」したHTMLを貼ってください。'
+      };
+    }
+
+    let parsed;
+    try { parsed = parseHtml(cls.value); }
+    catch (e) { return { ok: false, message: 'HTML を解析できませんでした。' }; }
+    const doc = parsed.doc;
+    if (!doc.body || !doc.body.querySelector('*')) {
+      return { ok: false, message: '要素が見つかりませんでした。タグごと（<div>〜</div>）貼れているか確認してください。' };
+    }
+
+    const elementCount = doc.body.querySelectorAll('*').length;
+    // 巨大なページでも固まらないように、調べる件数に上限を設ける
+    const CAP = elementCount > 3000 ? 250 : 600;
+
+    const groups = { repeat: [], click: [], input: [], text: [] };
+    const singleMaps = { click: new Map(), input: new Map(), text: new Map() };
+    const repeatBySel = new Map();
+
+    function pickBest(cands) {
+      return cands.find(c => c.strategy === 'css') || cands[0]; // コピーして使えるCSSを優先
+    }
+    function pickAlt(cands, best) {
+      const alt = cands.find(c => c !== best && c.strategy !== best.strategy && c.score >= 45);
+      return alt ? { strategy: alt.strategy, selector: alt.selector,
+                     role: alt.role || null, name: alt.name || null, score: alt.score } : null;
+    }
+
+    /* 1件狙いの行（ボタン・入力欄など、同じ形が並んでいないもの） */
+    function addSingleRow(kind, el, purpose) {
+      const cands = scoreCandidates(buildCandidates(el, doc, purpose), doc, el, null);
+      if (!cands.length) return;
+      const best = pickBest(cands);
+      const key = best.strategy + '|' + best.selector;
+      const label = visibleText(el).slice(0, 60) || accessibleName(el, doc).slice(0, 60) || '';
+      const seen = singleMaps[kind].get(key);
+      if (seen) {
+        seen.n++;
+        if (label && seen.samples.length < 3 && seen.samples.indexOf(label) < 0) seen.samples.push(label);
+        return;
+      }
+      singleMaps[kind].set(key, {
+        kind: kind, tag: el.tagName.toLowerCase(),
+        strategy: best.strategy, selector: best.selector,
+        role: best.role || null, name: best.name || null,
+        score: best.score, why: best.why,
+        matches: best.matches != null ? best.matches : -1,
+        hits: 1, n: 1, samples: label ? [label] : [],
+        alt: pickAlt(cands, best)
+      });
+    }
+
+    /* 並んでいる要素の行。代表1件の候補を「グループ全員に当たるか」で採点し直す。
+       例）100本の動画リンクなら、各リンク固有の href ではなく
+           全員が共通で持つ class（a.ytLockupMetadataViewModelTitle）が勝つ。 */
+    function addRepeatRow(kind, els, purpose) {
+      const rep = els[0];
+      const cands = scoreCandidates(buildCandidates(rep, doc, purpose), doc, rep, { multi: true });
+      if (!cands.length) return;
+      const N = els.length;
+      cands.forEach(c => {
+        if (c.strategy === 'css' && c.matches > 0) {
+          if (c.matches >= N * 0.8 && c.matches <= N * 1.6) c.score = U.clamp(c.score + 18, 1, 100);
+          else if (c.matches < N * 0.5) {
+            c.score = U.clamp(c.score - 25, 1, 100);
+            c.why = '⚠ この指定では並びの一部（' + c.matches + '/' + N + '件）にしか当たりません。';
+          }
+        }
+      });
+      cands.sort((a, b) => b.score - a.score);
+      const best = pickBest(cands);
+      const hits = best.matches > 0 ? best.matches : N;
+
+      const seen = repeatBySel.get(best.selector);
+      if (seen) { if (hits > seen.hits) seen.hits = hits; return; }
+
+      const row = {
+        kind: kind, tag: rep.tagName.toLowerCase(),
+        strategy: best.strategy, selector: best.selector,
+        role: best.role || null, name: best.name || null,
+        score: best.score, why: best.why,
+        matches: best.matches != null ? best.matches : -1,
+        hits: hits, n: N,
+        samples: els.slice(0, 3).map(e => visibleText(e).slice(0, 60)).filter(Boolean),
+        alt: pickAlt(cands, best)
+      };
+      repeatBySel.set(best.selector, row);
+      groups.repeat.push(row);
+    }
+
+    /* まず「同じ形のものが並んでいるか」をDOMの形（タグ+class+親の形）でグループ化してから振り分ける。
+       スクレイピングでは、この“繰り返しに当たる指定”がいちばんの主役。 */
+    function shapeKeyOf(el) {
+      let key = signature(el);
+      let p = el.parentElement, d = 0;
+      while (p && p !== doc.body && d < 2) { key += '>' + signature(p); p = p.parentElement; d++; }
+      return key;
+    }
+
+    [{ kind: 'click', sel: CLICKABLE, purpose: 'click' },
+     { kind: 'input', sel: INPUTABLE, purpose: 'input' },
+     { kind: 'text', sel: 'h1,h2,h3,h4,h5,h6,[role="heading"]', purpose: 'text' }
+    ].forEach(pool => {
+      const els = Array.from(doc.querySelectorAll(pool.sel)).slice(0, CAP);
+      const byShape = new Map();
+      els.forEach(el => {
+        const k = shapeKeyOf(el);
+        const g = byShape.get(k);
+        if (g) g.push(el); else byShape.set(k, [el]);
+      });
+      byShape.forEach(group => {
+        if (group.length >= 3) addRepeatRow(pool.kind, group, pool.purpose);
+        else group.forEach(el => addSingleRow(pool.kind, el, pool.purpose));
+      });
+    });
+
+    ['click', 'input', 'text'].forEach(kind => {
+      singleMaps[kind].forEach(row => {
+        // 形では別々でも、結果的に同じセレクタへ3件以上集まったら並びものとして扱う
+        const hits = Math.max(row.n, row.matches > 0 ? row.matches : 0);
+        row.hits = hits;
+        if (hits >= 3 && !repeatBySel.has(row.selector)) {
+          repeatBySel.set(row.selector, row);
+          groups.repeat.push(row);
+        } else if (hits < 3) {
+          groups[kind].push(row);
+        }
+      });
+    });
+    groups.repeat.sort((a, b) => b.hits - a.hits || b.score - a.score);
+    groups.click.sort((a, b) => b.score - a.score);
+    groups.input.sort((a, b) => b.score - a.score);
+    groups.text.sort((a, b) => b.score - a.score);
+
+    /* id / class の在庫 */
+    const idRows = [];
+    const clsCount = {};
+    Array.from(doc.body.querySelectorAll('*')).forEach(el => {
+      const id = el.getAttribute && el.getAttribute('id');
+      if (id && isStableId(id) && idRows.length < 40) {
+        idRows.push({ name: id, tag: el.tagName.toLowerCase(),
+                      text: visibleText(el).slice(0, 40) });
+      }
+      classList(el).forEach(c => {
+        if (isStableClass(c)) clsCount[c] = (clsCount[c] || 0) + 1;
+      });
+    });
+    const classRows = Object.keys(clsCount)
+      .map(name => ({ name: name, count: clsCount[name] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 48);
+
+    return {
+      ok: true,
+      groups: groups,
+      ids: idRows,
+      classes: classRows,
+      elementCount: elementCount,
+      capped: elementCount > 3000,
+      analyzedIn: parsed.isFullDoc ? 'ページ全体（' + elementCount + '要素）' : '貼り付けたHTML（' + elementCount + '要素）'
+    };
+  }
+
   /* ---------- ターゲット→Playwright ロケータ式 ----------
      opts.bare = true なら .first / .nth() を付けない（.all() や .count() 用） */
   function locatorExpr(target, scopeVar, opts) {
@@ -835,7 +1018,7 @@
   }
 
   global.SEL = {
-    analyze, locatorExpr, relativeSelector, classifyInput,
+    analyze, catalog, locatorExpr, relativeSelector, classifyInput,
     isStableClass, isStableId, looksHashed, isUtilityClass,
     visibleText, accessibleName, roleOf, cssEsc
   };

@@ -613,6 +613,92 @@ html[data-theme="dark"] .howto-box { color: var(--fg); }
   word-break: break-all; max-height: 70px; overflow: auto;
 }
 
+/* ─────────── セレクタ抽出タブ ─────────── */
+.view-tabs {
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--bg-panel-2); border: 1px solid var(--border);
+  border-radius: 10px; margin-left: 6px; flex-shrink: 0;
+}
+.view-tab {
+  font: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  padding: 5px 12px; border: 0; border-radius: 8px; cursor: pointer;
+  background: transparent; color: var(--fg-muted);
+}
+.view-tab:hover { color: var(--fg); }
+.view-tab.active { background: var(--bg-panel); color: var(--fg); box-shadow: var(--shadow-sm); }
+
+.labview {
+  height: calc(100vh - var(--topbar-h));
+  height: calc(100dvh - var(--topbar-h));
+  overflow: auto; background: var(--bg);
+}
+.lab-wrap { max-width: 1240px; margin: 0 auto; padding: 22px 24px 60px; }
+.lab-head h2 { font-size: 19px; }
+.lab-head p { font-size: 13px; color: var(--fg-muted); max-width: 78ch; margin: 6px 0 0; }
+.lab-grid {
+  display: grid; grid-template-columns: minmax(320px, 5fr) minmax(380px, 7fr);
+  gap: 18px; margin-top: 18px; align-items: start;
+}
+.lab-in { min-width: 0; }
+.lab-in .howto-box { margin-bottom: 12px; }
+.lab-in textarea {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  font-family: var(--mono); font-size: 12px;
+}
+.lab-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.lab-out { min-width: 0; }
+.lab-filter { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.lab-filter input {
+  font: inherit; font-size: 13px; flex: 1; padding: 8px 12px;
+  border: 1px solid var(--border-strong); border-radius: 9px;
+  background: var(--bg-panel); color: var(--fg);
+}
+.lab-filter input:focus { outline: none; border-color: var(--accent); }
+.lab-scope { font-size: 11.5px; color: var(--fg-faint); white-space: nowrap; }
+.lab-results { min-height: 200px; }
+.lab-empty {
+  border: 2px dashed var(--border-strong); border-radius: 14px;
+  padding: 34px 22px; text-align: center; color: var(--fg-muted); font-size: 13px;
+}
+.le-icon { font-size: 34px; margin-bottom: 6px; }
+.le-legend {
+  list-style: none; margin: 14px auto 0; padding: 0; max-width: 420px;
+  text-align: left; font-size: 12px; color: var(--fg-faint); display: grid; gap: 4px;
+}
+.lab-sec { margin-bottom: 22px; }
+.lab-sec > h3 {
+  font-size: 13.5px; margin-bottom: 8px;
+  display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+}
+.lab-sec > h3 small { font-size: 11px; font-weight: 400; color: var(--fg-faint); }
+.lab-row { align-items: flex-start; }
+.lab-row .sc-sel code { font-family: var(--mono); }
+.lab-btns { display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; }
+.lab-hits { font-weight: 700; color: var(--accent); margin-right: 6px; }
+.lab-hits-ok { color: var(--ok); }
+.lab-hits-warn { color: var(--warn); }
+.lab-sample { color: var(--fg-faint); }
+.lab-alt { font-size: 11px; color: var(--fg-faint); margin-top: 3px; }
+.lab-alt code { font-family: var(--mono); font-size: 10.5px; word-break: break-all; }
+.lab-chips { display: grid; gap: 8px; }
+.lab-chip-row { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.lab-chip-row > b {
+  font-size: 10.5px; color: var(--fg-faint); text-transform: uppercase;
+  letter-spacing: .05em; margin-right: 3px;
+}
+.lab-chip {
+  font-family: var(--mono); font-size: 11px; cursor: pointer;
+  padding: 3px 9px; border-radius: 20px;
+  border: 1px solid var(--border-strong); background: var(--bg-panel); color: var(--fg);
+}
+.lab-chip:hover { border-color: var(--accent); color: var(--accent); }
+.lab-chip i { font-style: normal; color: var(--fg-faint); margin-left: 3px; font-size: 10px; }
+@media (max-width: 980px) {
+  .lab-grid { grid-template-columns: 1fr; }
+  .view-tabs { margin-left: 2px; }
+  .view-tab { padding: 5px 8px; font-size: 11.5px; }
+}
+
 /* ─────────── 注釈エディタ ─────────── */
 .annotator { display: flex; flex-direction: column; min-height: 0; flex: 1; }
 .anno-tools {
