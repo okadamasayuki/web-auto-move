@@ -219,41 +219,36 @@
 
   function rowHtml(row, i, repeated) {
     const hay = (row.selector + ' ' + (row.name || '') + ' ' + row.samples.join(' ')).toLowerCase();
-    const sample = row.samples.length
-      ? '例: ' + row.samples.map(esc).join(' ／ ')
-      : '';
+    const sample = row.samples.length ? row.samples.join(' ／ ') : '';
     const hits = repeated
-      ? '<span class="lab-hits">🔁 ' + row.hits + '件に当たる</span>'
-      : (row.matches > 1 ? '<span class="lab-hits lab-hits-warn">' + row.matches + '件に一致</span>'
-         : row.matches === 1 ? '<span class="lab-hits lab-hits-ok">1件に特定 ✓</span>' : '');
+      ? '<span class="lab-hits" title="この指定は' + row.hits + 'か所に当たります">🔁 ' + row.hits + '件</span>'
+      : (row.matches > 1 ? '<span class="lab-hits lab-hits-warn" title="' + row.matches + 'か所に当たります（1件に絞れていません）">' + row.matches + '件</span>'
+         : row.matches === 1 ? '<span class="lab-hits lab-hits-ok" title="ちょうど1件に特定できています">1件 ✓</span>' : '');
     const shown = row.strategy === 'role'
-      ? 'role: ' + esc(row.role) + ' ／ 名前: ' + esc(row.name)
+      ? 'role: ' + esc(row.role) + ' ／ ' + esc(row.name)
       : esc(row.selector);
-    const altNote = row.alt
-      ? '<div class="lab-alt">別案: <code>' + (row.alt.strategy === 'role'
-          ? 'role:' + esc(row.alt.role) + '/' + esc(row.alt.name)
-          : esc(row.alt.selector)) + '</code></div>'
-      : '';
+    const tip = (row.strategy === 'role' ? 'role: ' + row.role + ' ／ 名前: ' + row.name : row.selector) +
+      (row.alt ? '\n別案: ' + (row.alt.strategy === 'role'
+          ? 'role:' + row.alt.role + '/' + row.alt.name : row.alt.selector) : '');
     return '<div class="sel-card lab-row" data-hay="' + esc(hay) + '" data-i="' + i + '">' +
-      '<div class="sc-score"><b>' + row.score + '</b><small>安定度</small></div>' +
-      '<div class="sc-main">' +
-        '<div class="sc-sel">' +
-          '<span class="sc-badge ' + scoreClass(row.score) + '">' + scoreWord(row.score) + '</span>' +
-          '<code>' + shown + '</code></div>' +
-        '<div class="sc-why">' + hits + (sample ? ' <span class="lab-sample">' + sample + '</span>' : '') + '</div>' +
-        altNote +
-      '</div>' +
-      '<div class="lab-btns">' +
-        '<button class="btn btn-sm" data-copy="sel" title="セレクタ（またはPlaywright指定）をコピー">📋 セレクタ</button>' +
-        '<button class="btn btn-sm" data-copy="py" title="そのまま使えるPythonコードをコピー">🐍 Python</button>' +
-      '</div></div>';
+      '<span class="sc-badge ' + scoreClass(row.score) + '" title="安定度 ' + row.score + '/100 — 高いほどページ変更に強い指定です">' +
+        scoreWord(row.score) + ' ' + row.score + '</span>' +
+      '<code class="lab-code" title="' + esc(tip) + '">' + shown + '</code>' +
+      hits +
+      (sample ? '<span class="lab-sample" title="例: ' + esc(sample) + '">' + esc(sample) + '</span>' : '') +
+      '<span class="lab-btns">' +
+        '<button class="btn btn-sm" data-copy="sel" title="セレクタ（またはPlaywright指定）をコピー">📋</button>' +
+        '<button class="btn btn-sm" data-copy="py" title="そのまま使えるPythonコードをコピー">🐍</button>' +
+      '</span></div>';
   }
 
-  function sectionHtml(icon, title, note, rowsHtml) {
+  function sectionHtml(icon, title, note, rowsHtml, shown, total) {
     if (!rowsHtml) return '';
-    return '<section class="lab-sec">' +
-      '<h3>' + icon + ' ' + title + ' <small>' + esc(note || '') + '</small></h3>' +
-      rowsHtml + '</section>';
+    const cnt = total > shown ? '上位' + shown + '種 / 全' + total + '種' : shown + '種';
+    return '<details class="lab-sec" open>' +
+      '<summary>' + icon + ' ' + title + ' <span class="lab-cnt">' + cnt + '</span>' +
+        ' <small>' + esc(note || '') + '</small></summary>' +
+      '<div class="lab-sec-body">' + rowsHtml + '</div></details>';
   }
 
   function render(res) {
@@ -274,14 +269,14 @@
     }).join('');
 
     let html = '';
-    html += sectionHtml('🔁', '並んでいる要素', '一覧・「順番にクリック」の主役。繰り返しノードの「数える要素」にも使えます',
-      collect(g.repeat.slice(0, 12), true));
+    html += sectionHtml('🔁', '並んでいる要素', '一覧・「順番にクリック」の主役',
+      collect(g.repeat.slice(0, 12), true), Math.min(g.repeat.length, 12), g.repeat.length);
     html += sectionHtml('🖱', 'クリックできるもの', 'ボタン・リンクなど1件狙い',
-      collect(g.click.slice(0, 14), false));
-    html += sectionHtml('⌨️', '入力欄', '文字入力ノードの対象に',
-      collect(g.input.slice(0, 10), false));
-    html += sectionHtml('📰', '見出し', '情報取得（文字の取り出し）の対象に',
-      collect(g.text.slice(0, 8), false));
+      collect(g.click.slice(0, 14), false), Math.min(g.click.length, 14), g.click.length);
+    html += sectionHtml('⌨️', '入力欄', '文字入力の対象に',
+      collect(g.input.slice(0, 10), false), Math.min(g.input.length, 10), g.input.length);
+    html += sectionHtml('📰', '見出し', '文字の取り出しの対象に',
+      collect(g.text.slice(0, 8), false), Math.min(g.text.length, 8), g.text.length);
 
     /* id / class の在庫 */
     if (res.ids.length || res.classes.length) {
@@ -299,8 +294,10 @@
             (r.count > 1 ? '<i>×' + r.count + '</i>' : '') + '</button>').join('') +
           '</div>';
       }
-      html += '<section class="lab-sec"><h3>🏷 id / class の在庫 <small>クリックでセレクタとしてコピー。手で組み合わせたい人向け</small></h3>' +
-        '<div class="lab-chips">' + chips + '</div></section>';
+      html += '<details class="lab-sec"><summary>🏷 id / class の在庫 ' +
+        '<span class="lab-cnt">' + (res.ids.length + res.classes.length) + '種</span>' +
+        ' <small>クリックでセレクタとしてコピー</small></summary>' +
+        '<div class="lab-sec-body"><div class="lab-chips">' + chips + '</div></div></details>';
     }
 
     if (!html) {
@@ -321,6 +318,15 @@
     });
     U.$$('#labResults .lab-chip').forEach(chip => {
       chip.style.display = !q || chip.textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+    });
+    U.$$('#labResults .lab-chip-row').forEach(row => {
+      row.style.display = U.$$('.lab-chip', row).some(c => c.style.display !== 'none') ? '' : 'none';
+    });
+    /* 中身が全部隠れたセクションは見出しごと隠す。絞り込み中は自動で開く */
+    U.$$('#labResults .lab-sec').forEach(sec => {
+      const any = U.$$('.lab-row, .lab-chip', sec).some(el => el.style.display !== 'none');
+      sec.style.display = any ? '' : 'none';
+      if (q && any) sec.open = true;
     });
   }
 
@@ -376,6 +382,12 @@
       analyze();
     });
     $('#labFilter').addEventListener('input', U.debounce(applyFilter, 120));
+
+    /* プレビューをたたむ／ひらく */
+    $('#labPvFold').addEventListener('click', () => {
+      const folded = $('#labPreview').classList.toggle('folded');
+      $('#labPvFold').textContent = folded ? 'ひらく' : 'たたむ';
+    });
 
     /* 行内のコピーボタン／行クリックで赤枠を固定 */
     $('#labResults').addEventListener('click', e => {

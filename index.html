@@ -133,14 +133,13 @@
   <div class="lab-wrap">
     <header class="lab-head">
       <h2>🎯 セレクタ抽出ツール</h2>
-      <p>スクレイピングの要になる「セレクタ」——class や id などから作る、ページ内の要素の指し示し方——を、
-        HTMLを貼るだけでまとめて抽出します。フロー編集とは独立した道具です（各ノードの「🔎 HTMLから推定」は今までどおり使えます）。</p>
+      <p>HTMLを貼るだけで、スクレイピングに使える「セレクタ」をまとめて抽出します（フロー編集とは独立した道具です）。</p>
     </header>
 
     <div class="lab-grid">
       <section class="lab-in">
-        <div class="howto-box">
-          <b>やり方（Chrome / Edge）</b>
+        <details class="howto-box lab-howto">
+          <summary><b>やり方（Chrome / Edge）</b></summary>
           <ol>
             <li>対象のサイトで、調べたいあたりを<b>右クリック → 検証</b></li>
             <li>青くハイライトされた行（少し外側の行でもOK）を<b>右クリック → Copy → Copy outerHTML</b></li>
@@ -148,11 +147,11 @@
           </ol>
           <small>ページ全体のHTMLでも、一部分だけでも構いません。多めに貼るほど「何件に当たるか」が正確になります。</small>
           <div class="bm-box">✨ もっと簡単に：<a id="bmLinkLab" href="#" class="bm-link">🔖 要素コピーくん</a> を<b>ブックマークバーへドラッグして登録</b> → 対象サイトで押す → 調べたい要素をクリックすると、そのHTMLが自動でコピーされます。</div>
-        </div>
+        </details>
 
         <div class="field">
           <label for="labHtml">HTML を貼り付け</label>
-          <textarea id="labHtml" rows="13" spellcheck="false"
+          <textarea id="labHtml" rows="7" spellcheck="false"
             placeholder="&lt;ul class=&quot;product-list&quot;&gt;&#10;  &lt;li&gt;&lt;a class=&quot;item-title&quot; href=&quot;/item/1&quot;&gt;商品A&lt;/a&gt;…&#10;&lt;/ul&gt;"></textarea>
         </div>
 
@@ -172,11 +171,11 @@
         <div class="lab-preview" id="labPreview" hidden>
           <div class="lab-preview-head">
             <b>🖼 プレビュー</b>
-            <span class="lab-preview-note">下の行に<b>マウスを乗せる</b>と該当する場所に赤枠が付きます。行を<b>クリック</b>で固定。
-              プレビュー内の要素をクリックすると、対応する行へ飛びます。</span>
+            <span class="lab-preview-note">行に<b>マウス</b>で赤枠、<b>クリック</b>で固定。プレビュー内をクリックすると対応する行へ飛びます。
+              <span class="lab-preview-hint" title="見た目は本物と違います（CSSなしの簡易表示）が、中身は貼ったHTMLそのものなので、赤枠の付く場所＝プログラムが実際に狙う場所です。">ⓘ</span></span>
+            <button class="btn btn-sm lab-pv-fold" id="labPvFold" title="プレビューをたたむ／ひらく">たたむ</button>
           </div>
           <iframe id="labFrame" sandbox="allow-same-origin" title="貼り付けたHTMLの簡易表示"></iframe>
-          <div class="lab-preview-foot">見た目は本物と違います（CSSなしの簡易表示）が、<b>中身は貼ったHTMLそのもの</b>なので、赤枠の付く場所＝プログラムが実際に狙う場所です。</div>
         </div>
 
         <div id="labResults" class="lab-results">
