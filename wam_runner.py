@@ -42,7 +42,35 @@ VERSION = "1.1"
 DEFAULT_PORT = 8765
 APP_URL = "https://okadamasayuki.github.io/web-auto-move/"
 BASE_DIR = Path.home() / "WebAutoMove"
-TOKEN = secrets.token_hex(4).upper()          # 8桁の接続コード
+STATE_DIR = BASE_DIR / "_state"               # ログイン状態など、実行をまたいで残すもの
+
+
+def _load_or_make_token():
+    """接続コードは一度作ったら使い回す。
+    毎回変わると、ブラウザ側に保存した接続情報が無効になり、
+    再起動のたびに入力し直しになってしまうため。"""
+    f = STATE_DIR / "token.txt"
+    try:
+        if f.exists():
+            t = f.read_text(encoding="utf-8").strip().upper()
+            if re.fullmatch(r"[0-9A-F]{8}", t):
+                return t
+    except Exception:
+        pass
+    t = secrets.token_hex(4).upper()
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        f.write_text(t, encoding="utf-8")
+        try:
+            os.chmod(f, 0o600)
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return t
+
+
+TOKEN = _load_or_make_token()                 # 8桁の接続コード
 
 RUNS = {}          # run_id -> {proc, dir, log, name, started, lf}
 LOCK = threading.Lock()
@@ -225,6 +253,10 @@ class Handler(BaseHTTPRequestHandler):
             env = dict(os.environ)
             env["PYTHONIOENCODING"] = "utf-8"
             env["PYTHONUNBUFFERED"] = "1"
+            # ログイン状態は実行ごとのフォルダではなく、共通の場所に残す
+            # （毎回ログインし直しにならないように）
+            STATE_DIR.mkdir(parents=True, exist_ok=True)
+            env["WAM_STATE_DIR"] = str(STATE_DIR)
             try:
                 proc = subprocess.Popen(
                     [sys.executable, "scraper.py"],

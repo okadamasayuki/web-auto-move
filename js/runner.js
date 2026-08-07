@@ -60,9 +60,13 @@
       if (R.connected) {
         showPanel();
         if (st.running && !R.run) {
-          // ページを開き直しても、実行中のものがあれば拾う
+          // ページを開き直しても、実行中のものがあれば拾って操作できるようにする
           R.run = { id: st.running, offset: 0, done: false };
+          appendLog('（実行中のフローを見つけました。続きのログを表示します）\n');
+          setRunning(true);
           startLogPolling();
+        } else if (!st.running && (!R.run || R.run.done)) {
+          setRunning(false);
         }
         renderDeps(st);
       } else {
@@ -104,6 +108,14 @@
     dom.badge.classList.toggle('on', R.connected);
     const topBtn = U.$('#btnRun');
     if (topBtn) topBtn.classList.toggle('connected', R.connected);
+  }
+
+  /** 実行中かどうかでボタンの有効・無効をそろえる */
+  function setRunning(running) {
+    if (!dom) return;
+    dom.btnRun.disabled = !!running;
+    dom.btnStop.disabled = !running;
+    if (running) dom.btnReport.disabled = false;
   }
 
   function showSetup() {
@@ -149,7 +161,7 @@
 
     dom.log.textContent = '';
     appendLog('▶ 実行環境へ送信しています…\n');
-    dom.btnRun.disabled = true;
+    setRunning(true);
 
     api('/run', {
       method: 'POST',
@@ -159,13 +171,19 @@
       R.run = { id: res.run, dir: res.dir, output: res.output, offset: 0, done: false };
       appendLog('✅ 開始しました。\n📁 保存先: ' + res.output + '\n' + '─'.repeat(46) + '\n');
       dom.dir.textContent = res.output || res.dir || '';
-      dom.btnStop.disabled = false;
-      dom.btnReport.disabled = false;
+      setRunning(true);
       startLogPolling();
     }).catch(err => {
-      dom.btnRun.disabled = false;
       appendLog('⛔ 開始できませんでした: ' + err.message + '\n');
-      U.toast('実行を開始できませんでした: ' + err.message, 'err', 4500);
+      if (/実行中/.test(err.message)) {
+        // 前の実行が残っている。停止できるようにして案内する
+        appendLog('　→「⏹ 停止」で前の実行を止めてから、もう一度お試しください。\n');
+        checkStatus(true).catch(() => {});
+        U.toast('前のフローがまだ実行中です。⏹ 停止 を押してください', 'warn', 5000);
+      } else {
+        setRunning(false);
+        U.toast('実行を開始できませんでした: ' + err.message, 'err', 4500);
+      }
     });
   }
 
@@ -203,8 +221,7 @@
         if (res.done && !R.run.done) {
           R.run.done = true;
           stopLogPolling();
-          dom.btnRun.disabled = false;
-          dom.btnStop.disabled = true;
+          setRunning(false);
           appendLog('\n' + '─'.repeat(46) + '\n' +
             (res.returncode === 0 ? '✅ 実行が終了しました。' : '⚠ 終了コード ' + res.returncode + ' で終了しました。') +
             '\n📁 結果: ' + (res.output || '') + '\n🖼 「実行レポートを開く」で画面の記録を確認できます。\n');

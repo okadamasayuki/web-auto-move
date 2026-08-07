@@ -120,8 +120,9 @@
           help: 'ダウンロードや保存の基準になるフォルダ。相対パスならスクリプトと同じ場所に作られます。' },
         { key: 'browser', type: 'select', label: 'ブラウザ', default: 'chromium',
           options: [['chromium', 'Chromium（Chrome系・推奨）'], ['firefox', 'Firefox'], ['webkit', 'WebKit（Safari系）']] },
-        { key: 'headless', type: 'checkbox', label: 'ヘッドレスで動かす（画面を出さない）', default: false,
-          help: '最初はオフにして、ブラウザの動きを目で見ながら確認するのがおすすめです。慣れたらオンにすると高速になります。' },
+        { key: 'headless', type: 'checkbox', label: 'ブラウザを見えない状態で動かす（ヘッドレス）', default: false,
+          help: 'オフ（既定）＝ブラウザの窓が実際に開いて、クリックやページ移動が目の前で見えます。まずはオフのまま確認してください。' +
+                'オン＝窓を出さずに裏で動きます。速くて邪魔になりませんが、様子は見えません（そのぶん実行レポートで確認できます）。' },
         { key: 'viewport_w', type: 'number', label: '画面の幅 (px)', default: 1440, min: 320, step: 10 },
         { key: 'viewport_h', type: 'number', label: '画面の高さ (px)', default: 900, min: 320, step: 10 },
         { key: 'timeout', type: 'number', label: '各操作のタイムアウト (秒)', default: 30, min: 1, step: 1,
@@ -132,8 +133,10 @@
           help: '相手のサーバーに負荷をかけないためのマナー待機。繰り返し処理で効いてきます。0.5〜2秒を推奨。' },
         { key: 'user_agent', type: 'text', label: 'User-Agent（任意）', placeholder: '空欄なら既定値', mono: true },
         { key: 'locale', type: 'text', label: '言語 / ロケール', default: 'ja-JP', mono: true },
-        { key: 'use_session', type: 'checkbox', label: 'ログイン状態を保存して次回から再利用する', default: false,
-          help: 'オンにすると Cookie 等を state.json に保存します。2回目以降はログイン操作を飛ばせます。' },
+        { key: 'use_session', type: 'checkbox', label: 'ログイン状態を覚えておく', default: false,
+          help: 'オンにすると、このフロー専用のブラウザとして起動し、ログイン状態が残ります。' +
+                '初回に開いたブラウザで手動ログインすれば、2回目からはログイン済みの状態で始まります。' +
+                'ログインが必要なサイトを扱うときはオンにしてください。' },
         { key: 'keep_open', type: 'checkbox', label: '終了後もブラウザを開いたままにする', default: false,
           help: '最後の画面を目視で確認したいときに便利です（Enterを押すまで閉じません）。' },
         { key: 'record_preview', type: 'checkbox', label: '実行レポートを作る（開いた画面を記録）', default: true,

@@ -1,0 +1,9 @@
+Web Auto Move 実行環境
+
+接続コード : 353930F8
+アドレス   : http://127.0.0.1:8765
+
+この画面を閉じてしまった場合は、下のリンクをブラウザで開くと
+自動で接続されます（コードの入力は不要です）。
+
+https://okadamasayuki.github.io/web-auto-move/#connect=353930F8&port=8765
