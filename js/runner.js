@@ -192,6 +192,7 @@
               '　 先に下の「🌐 ログイン用ブラウザを開く」を押し、\n' +
               '　 開いたウィンドウで対象サイトにログインしてから、もう一度実行してください。\n');
             U.toast('先に「🌐 ログイン用ブラウザを開く」を押してログインしてください', 'warn', 6000);
+            if (dom.loginSteps) dom.loginSteps.hidden = false;
             dom.btnLaunchChrome.classList.add('need-attention');
             setTimeout(() => dom.btnLaunchChrome.classList.remove('need-attention'), 6000);
           }
@@ -264,7 +265,8 @@
         appendLog('🌐 ログイン用の Chrome を開きました。\n' +
           '　 開いたウィンドウで対象サイトにログインしてください。\n' +
           '　 ログインできたら、そのウィンドウは閉じずに「▶ このフローを実行」を押します。\n');
-        U.toast('ログイン用ブラウザを開きました。そこでログインしてください', 'ok', 5000);
+        if (dom.loginSteps) dom.loginSteps.hidden = false;
+        U.toast('開いたブラウザでログインしてください（手順を下に表示しました）', 'ok', 6000);
       })
       .catch(err => {
         appendLog('⛔ ログイン用ブラウザを開けませんでした: ' + err.message + '\n');
@@ -365,7 +367,8 @@
       btnRun: U.$('#btnRunFlow'),
       btnStop: U.$('#btnRunStop'),
       btnReport: U.$('#btnRunReport'),
-      btnLaunchChrome: U.$('#btnLaunchChrome')
+      btnLaunchChrome: U.$('#btnLaunchChrome'),
+      loginSteps: U.$('#loginSteps')
     };
     initOsTabs();
     dom.btnConnect.addEventListener('click', connect);
