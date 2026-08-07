@@ -557,7 +557,7 @@
       U.el('button', {
         class: 'btn btn-sm', html: '🔎 HTMLから推定',
         onclick: () => {
-          const purpose = guessPurpose(node.type, f.key);
+          const purpose = guessPurpose(node.type, f.key, node);
           SelModal.open(purpose, t.html || '', result => {
             if (result.kind === 'list') {
               applyListInfo(node, result.listInfo);
@@ -689,10 +689,14 @@
     }[strategy || 'css'] || '';
   }
 
-  function guessPurpose(nodeType, fieldKey) {
+  function guessPurpose(nodeType, fieldKey, node) {
     if (nodeType === 'extract_list') return 'list';
     if (nodeType === 'input' || nodeType === 'select_option' || nodeType === 'upload') return 'input';
     if (nodeType === 'extract') return 'text';
+    // 「並んだ要素を数える／順番にクリックする」用途は、
+    // 1件の文字ではなく“同じ形すべて”に当たる指定が必要
+    if (nodeType === 'loop' && fieldKey === 'elements_target') return 'many';
+    if (node && node.data && node.data[fieldKey] && node.data[fieldKey].index === 'loop') return 'many';
     return 'click';
   }
 

@@ -389,6 +389,13 @@
       let matches = -1;
       let hitsTarget = null;
 
+      // 一覧（順番にクリックする用途）では、その1件の文字に結びつく指定は使えない。
+      // 「ログイン」ボタンのような一点狙いと違い、同じ形すべてに当たる必要がある。
+      if (multi && ['text', 'role', 'label', 'placeholder'].indexOf(c.strategy) >= 0) {
+        score -= 45;
+        c.why = '⚠ この指定は特定の1件の文字に結びつくため、一覧の繰り返しには向きません。';
+      }
+
       if (c.strategy === 'css' && doc) {
         matches = countMatches(doc, c.selector);
         if (matches === 1) {
@@ -604,8 +611,19 @@
   /* ══════════════════════════════════════════════════════════
      公開API: analyze()
      ══════════════════════════════════════════════════════════ */
+  /**
+   * purpose の種類
+   *   click : 1つのボタン／リンクを押す
+   *   many  : 並んでいる同じ要素すべて（順番にクリックする用途）
+   *   input : 文字を入れる欄
+   *   text  : 文字を取り出す
+   *   list  : 一覧の「1件分の枠」（表として取り出す用途）
+   */
   function analyze(rawInput, keyword, purpose) {
     purpose = purpose || 'click';
+    // many は「探し方は click と同じ、採点だけ“すべてに当たるか”で見る」
+    const findAs = purpose === 'many' ? 'click' : purpose;
+    const wantMany = purpose === 'many' || purpose === 'list';
     const cls = classifyInput(rawInput);
 
     if (cls.kind === 'empty') {
@@ -650,9 +668,9 @@
     let alternatives = [];
 
     if (isFragment) {
-      target = refineFragmentTarget(pickFragmentRoot(doc), purpose);
+      target = refineFragmentTarget(pickFragmentRoot(doc), findAs);
     } else {
-      const found = findByKeyword(doc, kw, purpose);
+      const found = findByKeyword(doc, kw, findAs);
       if (!found.length) {
         return {
           ok: false,
@@ -668,7 +686,9 @@
     if (!target) return { ok: false, message: '対象の要素を特定できませんでした。' };
 
     const scopeDoc = doc;
-    const cands = scoreCandidates(buildCandidates(target, scopeDoc, purpose), scopeDoc, target);
+    // 一覧用途では「同じ形すべてに当たるか」を基準に採点する
+    const cands = scoreCandidates(buildCandidates(target, scopeDoc, findAs), scopeDoc, target,
+                                  wantMany ? { multi: true } : null);
 
     /* 一覧用途なら、繰り返しの枠と列候補も返す */
     let listInfo = null;
