@@ -118,7 +118,19 @@
         { key: 'base_dir', type: 'text', label: '出力先フォルダ（基準）', default: 'output', vars: true,
           placeholder: 'output',
           help: 'ダウンロードや保存の基準になるフォルダ。相対パスならスクリプトと同じ場所に作られます。' },
+        { key: 'connect_mode', type: 'select', label: 'どのブラウザで動かすか', default: 'own',
+          options: [
+            ['own', '専用のブラウザを新しく開く（既定）'],
+            ['cdp', '自分のChromeにつないで動かす（ログイン済みのまま使える）']
+          ],
+          help: 'Google・Microsoft など一部のサイトは、自動操作ブラウザからのログインを拒否します。' +
+                'そういうサイトや、すでにログイン済みの環境をそのまま使いたいときは「自分のChromeにつなぐ」を選んでください。' +
+                '（▶実行の画面から、つなぐ用のChromeをボタン1つで開けます）' },
+        { key: 'cdp_url', type: 'text', label: 'つなぎ先', default: 'http://127.0.0.1:9222', mono: true,
+          showIf: d => d.connect_mode === 'cdp',
+          help: '▶実行の画面の「🌐 ログイン用ブラウザを開く」で開いたChromeにつながります。' },
         { key: 'browser', type: 'select', label: 'ブラウザ', default: 'chromium',
+          showIf: d => (d.connect_mode || 'own') !== 'cdp',
           options: [['chromium', 'Chromium（Chrome系・推奨）'], ['firefox', 'Firefox'], ['webkit', 'WebKit（Safari系）']] },
         { key: 'headless', type: 'checkbox', label: 'ブラウザを見えない状態で動かす（ヘッドレス）', default: false,
           help: 'オフ（既定）＝ブラウザの窓が実際に開いて、クリックやページ移動が目の前で見えます。まずはオフのまま確認してください。' +

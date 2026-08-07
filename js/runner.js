@@ -213,6 +213,23 @@
       .catch(err => U.toast('停止に失敗: ' + err.message, 'err'));
   }
 
+  /** ログイン用の（普段使いの）Chrome を、つなげる状態で開く */
+  function launchChrome() {
+    dom.btnLaunchChrome.disabled = true;
+    api('/launch-chrome', { method: 'POST', body: { port: 9222 }, timeout: 15000 })
+      .then(res => {
+        appendLog('🌐 ログイン用の Chrome を開きました。\n' +
+          '　 そのウィンドウで対象サイトにログインしてから、\n' +
+          '　 開始ノードの「どのブラウザで動かすか」を「自分のChromeにつないで動かす」にして実行してください。\n');
+        U.toast('ログイン用ブラウザを開きました。そこでログインしてください', 'ok', 5000);
+      })
+      .catch(err => {
+        appendLog('⛔ ログイン用ブラウザを開けませんでした: ' + err.message + '\n');
+        U.toast(err.message, 'err', 5000);
+      })
+      .then(() => { dom.btnLaunchChrome.disabled = false; });
+  }
+
   function openReport() {
     if (!R.run) return;
     window.open(R.url.replace(/\/+$/, '') + '/report/' + R.run.id + '/run_report.html', '_blank');
@@ -304,7 +321,8 @@
       btnConnect: U.$('#btnRunnerConnect'),
       btnRun: U.$('#btnRunFlow'),
       btnStop: U.$('#btnRunStop'),
-      btnReport: U.$('#btnRunReport')
+      btnReport: U.$('#btnRunReport'),
+      btnLaunchChrome: U.$('#btnLaunchChrome')
     };
     initOsTabs();
     dom.btnConnect.addEventListener('click', connect);
@@ -312,6 +330,7 @@
     dom.btnRun.addEventListener('click', runFlow);
     dom.btnStop.addEventListener('click', stopFlow);
     dom.btnReport.addEventListener('click', openReport);
+    dom.btnLaunchChrome.addEventListener('click', launchChrome);
   }
 
   /* ══════════════ OS別の起動手順 ══════════════ */

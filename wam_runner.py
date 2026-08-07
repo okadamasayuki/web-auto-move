@@ -28,6 +28,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import subprocess
 import sys
 import threading
@@ -98,6 +99,27 @@ def deps():
 def safe_name(s):
     s = re.sub(r'[\\/:*?"<>|\r\n\t]+', "_", str(s)).strip().strip(".")
     return s[:60] or "flow"
+
+
+def find_chrome():
+    """普段使いの Google Chrome を探す。"""
+    cands = [
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+        os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expanduser(r"~\AppData\Local\Google\Chrome\Application\chrome.exe"),
+        "/usr/bin/google-chrome", "/usr/bin/google-chrome-stable",
+        "/usr/bin/chromium", "/usr/bin/chromium-browser",
+    ]
+    for c in cands:
+        if c and os.path.exists(c):
+            return c
+    for name in ("google-chrome", "google-chrome-stable", "chromium", "chrome"):
+        p = shutil.which(name)
+        if p:
+            return p
+    return None
 
 
 def current_run_id():
@@ -299,6 +321,29 @@ class Handler(BaseHTTPRequestHandler):
             print(f"▶ 実行開始: {name}  →  {run_dir}")
             return self._json(200, {"run": rid, "dir": str(run_dir),
                                     "output": str(run_dir / "output")})
+
+        if u.path == "/launch-chrome":
+            # 普段使いの Chrome を「つなげる状態」で開く。
+            # Playwright が起動したブラウザではないので、Google 等のログイン制限を受けない。
+            port = int(payload.get("port") or 9222)
+            prof = STATE_DIR / "chrome-profile"
+            prof.mkdir(parents=True, exist_ok=True)
+            exe = find_chrome()
+            if not exe:
+                return self._json(404, {
+                    "error": "Google Chrome が見つかりませんでした。インストールしてから、もう一度お試しください。"})
+            try:
+                subprocess.Popen(
+                    [exe, f"--remote-debugging-port={port}",
+                     f"--user-data-dir={prof}",
+                     "--no-first-run", "--no-default-browser-check",
+                     "about:blank"],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    stdin=subprocess.DEVNULL)
+            except Exception as ex:
+                return self._json(500, {"error": "Chrome を起動できませんでした: " + str(ex)})
+            print(f"🌐 ログイン用の Chrome を開きました（ポート {port}）")
+            return self._json(200, {"ok": True, "port": port, "profile": str(prof), "exe": exe})
 
         if u.path == "/stop":
             r = RUNS.get(payload.get("run") or "")
