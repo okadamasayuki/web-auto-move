@@ -12,8 +12,149 @@
   const SEL = global.SEL;
 
   let lastResult = null;
+  let frameDoc = null;      // プレビューiframeのdocument
+  let pinned = -1;          // クリックで固定した行の番号（-1=なし）
 
   function $(sel) { return U.$(sel); }
+
+  /* ══════════ プレビュー（貼ったHTMLの簡易表示に赤枠を出す） ══════════ */
+
+  const PREVIEW_CSS = [
+    ':not(:defined){display:block}',                       // 未定義のカスタム要素も縦に並べる
+    'body{font:13px/1.7 -apple-system,"Hiragino Sans","Yu Gothic",Meiryo,sans-serif;',
+    '  margin:12px;word-break:break-word;background:#fff;color:#1c2230}',
+    'img{max-width:120px;max-height:80px}',
+    'a{color:#2563eb}',
+    'script,style,link,noscript,template{display:none!important}',
+    '.wam-hit{outline:3px solid #ef4444!important;outline-offset:2px;',
+    '  background:rgba(239,68,68,.10)!important;position:relative}',
+    '.wam-hit::after{content:attr(data-wam-n);position:absolute;top:-9px;left:-9px;z-index:9;',
+    '  min-width:16px;height:16px;line-height:16px;text-align:center;padding:0 3px;',
+    '  background:#ef4444;color:#fff;font-size:10px;font-weight:700;border-radius:9px;',
+    '  font-family:-apple-system,sans-serif}'
+  ].join('\n');
+
+  function stripScripts(html) {
+    return String(html)
+      .replace(/<script[\s\S]*?<\/script\s*>/gi, '')
+      .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  }
+
+  function buildPreview(raw) {
+    const pv = $('#labPreview');
+    const fr = $('#labFrame');
+    frameDoc = null;
+    pinned = -1;
+    pv.hidden = false;
+    fr.onload = () => {
+      const d = fr.contentDocument;
+      if (!d) return;
+      frameDoc = d;
+      const st = d.createElement('style');
+      st.textContent = PREVIEW_CSS;
+      (d.head || d.documentElement).appendChild(st);
+      d.addEventListener('click', onFrameClick, true);
+    };
+    fr.srcdoc = stripScripts(raw);
+  }
+
+  function hidePreview() {
+    $('#labPreview').hidden = true;
+    $('#labFrame').srcdoc = '';
+    frameDoc = null;
+    pinned = -1;
+  }
+
+  /** 行の指定が、プレビュー内のどの要素に当たるかを求める */
+  function resolveEls(row) {
+    if (!frameDoc || !frameDoc.body) return [];
+    try {
+      if (row.strategy === 'css') return Array.from(frameDoc.querySelectorAll(row.selector)).slice(0, 150);
+      if (row.strategy === 'xpath') {
+        const it = frameDoc.evaluate(row.selector, frameDoc, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
+        const out = [];
+        for (let i = 0; i < Math.min(it.snapshotLength, 150); i++) out.push(it.snapshotItem(i));
+        return out;
+      }
+    } catch (e) { return []; }
+    // role / text / label / placeholder は内容で照合する
+    const name = String(row.name || row.selector || '').toLowerCase();
+    const all = Array.from(frameDoc.body.querySelectorAll('*')).slice(0, 5000);
+    return all.filter(el => {
+      if (row.strategy === 'role') {
+        return SEL.roleOf(el) === row.role &&
+               SEL.accessibleName(el, frameDoc).toLowerCase().indexOf(name) >= 0;
+      }
+      if (row.strategy === 'text') return SEL.visibleText(el).toLowerCase() === name;
+      if (row.strategy === 'placeholder') return (el.getAttribute('placeholder') || '').toLowerCase() === name;
+      if (row.strategy === 'label') return SEL.accessibleName(el, frameDoc).toLowerCase() === name;
+      return false;
+    }).slice(0, 150);
+  }
+
+  function clearHighlight() {
+    if (!frameDoc) return;
+    Array.from(frameDoc.querySelectorAll('.wam-hit')).forEach(el => {
+      el.classList.remove('wam-hit');
+      el.removeAttribute('data-wam-n');
+    });
+  }
+
+  function highlightEls(els) {
+    if (!frameDoc) return 0;
+    clearHighlight();
+    els.forEach((el, i) => {
+      el.classList.add('wam-hit');
+      el.setAttribute('data-wam-n', i + 1);
+    });
+    // scrollIntoView だと親ページまで一緒にスクロールしてしまうので、iframeの中だけ動かす
+    const first = els[0];
+    const win = frameDoc.defaultView;
+    if (first && win) {
+      const r = first.getBoundingClientRect();
+      win.scrollTo(0, Math.max(0, win.scrollY + r.top - win.innerHeight / 2 + r.height / 2));
+    }
+    return els.length;
+  }
+
+  function highlightRowIndex(i) {
+    const flat = $('#labResults')._flat || [];
+    const item = flat[i];
+    if (!item) return;
+    highlightEls(resolveEls(item.row));
+  }
+
+  function setPinned(i) {
+    pinned = i;
+    U.$$('#labResults .lab-row').forEach(r =>
+      r.classList.toggle('pinned', Number(r.dataset.i) === i));
+    if (i >= 0) highlightRowIndex(i); else clearHighlight();
+  }
+
+  /** プレビュー内の要素をクリック → 該当する行へ飛ぶ */
+  function onFrameClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const flat = $('#labResults')._flat || [];
+    let hitIndex = -1;
+    for (let i = 0; i < flat.length && hitIndex < 0; i++) {
+      const row = flat[i].row;
+      if (row.strategy === 'css') {
+        try { if (e.target.closest(row.selector)) hitIndex = i; } catch (er) { /* 無効セレクタは無視 */ }
+      } else if (resolveEls(row).some(el => el === e.target || el.contains(e.target))) {
+        hitIndex = i;
+      }
+    }
+    if (hitIndex < 0) { U.toast('この場所に当たる行は見つかりませんでした', 'info'); return; }
+    setPinned(hitIndex);
+    const rowEl = U.$('#labResults .lab-row[data-i="' + hitIndex + '"]');
+    if (rowEl) {
+      rowEl.scrollIntoView({ block: 'center' });
+      rowEl.classList.remove('flash');
+      void rowEl.offsetWidth;              // アニメーションを再発火させる
+      rowEl.classList.add('flash');
+    }
+  }
 
   /* ---------- 表示切替（フロー ⇔ セレクタ抽出） ---------- */
   function show(on) {
@@ -168,6 +309,7 @@
     }
     box.innerHTML = html;
     box._flat = flat;
+    pinned = -1;
     applyFilter();
   }
 
@@ -189,9 +331,12 @@
     const res = SEL.catalog(raw);
     render(res);
     if (res.ok) {
+      buildPreview(raw);
       const total = res.groups.repeat.length + res.groups.click.length +
                     res.groups.input.length + res.groups.text.length;
       U.toast(total + '種類のセレクタを抽出しました', 'ok');
+    } else {
+      hidePreview();
     }
   }
 
@@ -222,8 +367,9 @@
       $('#labHtml').value = '';
       $('#labFilter').value = '';
       $('#labScope').textContent = '';
+      hidePreview();
       $('#labResults').innerHTML = '<div class="lab-empty"><div class="le-icon">🎯</div>' +
-        '<p>左にHTMLを貼って「🔎 抽出する」を押すと、<br>使えるセレクタがここに一覧で出ます。</p></div>';
+        '<p>左にHTMLを貼って「🔎 抽出する」を押すと、<br>使えるセレクタと簡易プレビューがここに出ます。</p></div>';
     });
     $('#labSample').addEventListener('click', () => {
       $('#labHtml').value = SAMPLE_HTML;
@@ -231,14 +377,20 @@
     });
     $('#labFilter').addEventListener('input', U.debounce(applyFilter, 120));
 
-    /* 行内のコピーボタン */
+    /* 行内のコピーボタン／行クリックで赤枠を固定 */
     $('#labResults').addEventListener('click', e => {
       const chip = e.target.closest('.lab-chip');
       if (chip) { copyText(chip.dataset.chip, '「' + chip.dataset.chip + '」をコピーしました'); return; }
       const btn = e.target.closest('[data-copy]');
-      if (!btn) return;
-      const rowEl = btn.closest('.lab-row');
+      const rowEl = e.target.closest('.lab-row');
       const flat = $('#labResults')._flat || [];
+      if (!btn) {
+        if (rowEl) {                       // 行そのものをクリック → 赤枠を固定/解除
+          const i = Number(rowEl.dataset.i);
+          setPinned(pinned === i ? -1 : i);
+        }
+        return;
+      }
       const item = flat[Number(rowEl.dataset.i)];
       if (!item) return;
       if (btn.dataset.copy === 'sel') {
@@ -249,6 +401,22 @@
       } else {
         copyText(pythonSnippet(item.row, item.repeated), 'Pythonコードをコピーしました');
       }
+    });
+
+    /* 行やチップにマウスを乗せると、プレビューに赤枠が出る（固定中は固定を優先） */
+    $('#labResults').addEventListener('mouseover', e => {
+      if (pinned >= 0 || !frameDoc) return;
+      const chip = e.target.closest('.lab-chip');
+      if (chip) {
+        try { highlightEls(Array.from(frameDoc.querySelectorAll(chip.dataset.chip)).slice(0, 150)); }
+        catch (er) { /* 無効セレクタは無視 */ }
+        return;
+      }
+      const rowEl = e.target.closest('.lab-row');
+      if (rowEl) highlightRowIndex(Number(rowEl.dataset.i));
+    });
+    $('#labResults').addEventListener('mouseleave', () => {
+      if (pinned < 0) clearHighlight();
     });
 
     /* ブックマークレット（フロー側と同じもの） */

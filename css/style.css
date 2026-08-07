@@ -656,6 +656,34 @@ html[data-theme="dark"] .howto-box { color: var(--fg); }
 .lab-filter input:focus { outline: none; border-color: var(--accent); }
 .lab-scope { font-size: 11.5px; color: var(--fg-faint); white-space: nowrap; }
 .lab-results { min-height: 200px; }
+.lab-preview {
+  position: sticky; top: 8px; z-index: 4;
+  display: flex; flex-direction: column;
+  height: 320px; min-height: 150px; max-height: 70vh;
+  resize: vertical; overflow: hidden;
+  border: 1px solid var(--border-strong); border-radius: var(--radius);
+  background: var(--bg-panel); box-shadow: var(--shadow-md);
+  margin-bottom: 12px;
+}
+.lab-preview-head {
+  display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  background: var(--bg-panel-2); font-size: 12px;
+}
+.lab-preview-note { font-size: 11px; color: var(--fg-muted); }
+#labFrame { flex: 1; width: 100%; border: 0; background: #fff; }
+.lab-preview-foot {
+  padding: 6px 12px; border-top: 1px solid var(--border);
+  font-size: 10.5px; color: var(--fg-faint);
+}
+.lab-row { cursor: pointer; }
+.lab-row.pinned { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.lab-row.flash { animation: labflash 1.2s ease-out; }
+@keyframes labflash {
+  0% { background: var(--accent-soft); }
+  100% { background: var(--bg-panel-2); }
+}
+@media (prefers-reduced-motion: reduce) { .lab-row.flash { animation: none; } }
 .lab-empty {
   border: 2px dashed var(--border-strong); border-radius: 14px;
   padding: 34px 22px; text-align: center; color: var(--fg-muted); font-size: 13px;

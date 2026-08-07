@@ -168,14 +168,26 @@
           <input type="search" id="labFilter" placeholder="🔍 結果を絞り込む（ボタンの文字・class名など）" aria-label="結果の絞り込み">
           <span class="lab-scope" id="labScope"></span>
         </div>
+
+        <div class="lab-preview" id="labPreview" hidden>
+          <div class="lab-preview-head">
+            <b>🖼 プレビュー</b>
+            <span class="lab-preview-note">下の行に<b>マウスを乗せる</b>と該当する場所に赤枠が付きます。行を<b>クリック</b>で固定。
+              プレビュー内の要素をクリックすると、対応する行へ飛びます。</span>
+          </div>
+          <iframe id="labFrame" sandbox="allow-same-origin" title="貼り付けたHTMLの簡易表示"></iframe>
+          <div class="lab-preview-foot">見た目は本物と違います（CSSなしの簡易表示）が、<b>中身は貼ったHTMLそのもの</b>なので、赤枠の付く場所＝プログラムが実際に狙う場所です。</div>
+        </div>
+
         <div id="labResults" class="lab-results">
           <div class="lab-empty">
             <div class="le-icon">🎯</div>
-            <p>左にHTMLを貼って「🔎 抽出する」を押すと、<br>使えるセレクタがここに一覧で出ます。</p>
+            <p>左にHTMLを貼って「🔎 抽出する」を押すと、<br>使えるセレクタと簡易プレビューがここに出ます。</p>
             <ul class="le-legend">
               <li>🔁 <b>並んでいる要素</b> — 一覧・繰り返しクリックの主役</li>
               <li>🖱 <b>クリックできるもの</b> / ⌨️ <b>入力欄</b> / 📰 <b>見出し</b></li>
               <li>🏷 <b>id / class の在庫</b> — 手で組みたい人向けの素材</li>
+              <li>🖼 行に触ると、<b>プレビュー上に赤枠</b>で「どこに当たるか」が出ます</li>
             </ul>
           </div>
         </div>
