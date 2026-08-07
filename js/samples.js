@@ -12,6 +12,46 @@
 
   const SAMPLES = [
 
+    /* ══════════ 0. ミニマム：YouTubeで動画を順に開く ══════════ */
+    {
+      key: 'youtube-mini',
+      icon: '🎬',
+      title: 'ミニマム：YouTubeの動画を順に開く',
+      desc: '一番小さな練習用フロー（7ノード）。「高く評価した動画」を上から10本、開いて→5秒ながめて→戻る、を繰り返すだけ。▶実行を押すとブラウザが立ち上がり、画面がバーッと切り替わっていくのを目で見られます。初回はブラウザが開いたら手でYouTubeにログインしてください（最大5分待ちます）。2回目からはログイン状態を再利用します。',
+      meta: 'ノード7個 / まずはこれ',
+      graph: {
+        name: 'ミニマム：YouTubeの動画を順に開く',
+        nodes: [
+          { id: 's1', type: 'start', title: '開始：高く評価した動画を開く', x: 60, y: 100,
+            data: { url: 'https://www.youtube.com/playlist?list=LL', base_dir: 'output',
+                    headless: false, use_session: true, polite_wait: 0.5,
+                    on_error: 'screenshot_continue',
+                    viewport_w: 1440, viewport_h: 900 } },
+          { id: 'w1', type: 'wait', title: '一覧を待つ（初回はこの間にログイン）', x: 340, y: 100,
+            data: { mode: 'visible', target: t('ytd-playlist-video-renderer a#video-title'),
+                    timeout: 300 } },
+          { id: 'lp', type: 'loop', title: '上から10本くり返す', x: 620, y: 80,
+            data: { mode: 'elements', elements_target: t('ytd-playlist-video-renderer a#video-title'),
+                    limit: 10, continue_on_error: true } },
+          { id: 'ck', type: 'click', title: '{{index}}本目の動画を開く', x: 900, y: 60,
+            data: { target: { strategy: 'css', selector: 'ytd-playlist-video-renderer a#video-title',
+                              index: 'loop' },
+                    wait_after: 'time', wait_ms: 1500 } },
+          { id: 'w2', type: 'wait', title: '5秒ながめる', x: 1180, y: 80,
+            data: { mode: 'time', ms: 5000 } },
+          { id: 'bk', type: 'goto', title: '一覧へ戻る', x: 1460, y: 80,
+            data: { mode: 'back', wait_until: 'load' } },
+          { id: 'fin', type: 'log', title: '完了', x: 620, y: 360,
+            data: { message: '10本ぶん見終わりました！' } }
+        ],
+        edges: [
+          e('s1', 'w1'), e('w1', 'lp'),
+          e('lp', 'ck', 'body'), e('ck', 'w2'), e('w2', 'bk'),
+          e('lp', 'fin', 'done')
+        ]
+      }
+    },
+
     /* ══════════ 1. 一覧を Excel に ══════════ */
     {
       key: 'list-to-excel',

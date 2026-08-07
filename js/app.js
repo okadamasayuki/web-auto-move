@@ -273,10 +273,10 @@
   }
 
   function firstRun() {
-    // 初回はいちばん簡単なサンプルを開いて、雰囲気をつかんでもらう
+    // 初回は「ログイン不要ですぐ動く」サンプルを開いて、雰囲気をつかんでもらう
     if (!U.lsGet(LS_FIRST, false) && SAMPLES && SAMPLES.length) {
       U.lsSet(LS_FIRST, true);
-      loadSample(SAMPLES[0], true);
+      loadSample(SAMPLES.find(s => s.key === 'list-to-excel') || SAMPLES[0], true);
       setTimeout(() => openModal('helpModal'), 700);
     } else {
       FLOW.addNode('start', 160, 160);
