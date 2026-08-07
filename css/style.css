@@ -641,6 +641,13 @@ html[data-theme="dark"] .howto-box { color: var(--fg); }
 }
 #annoLabel:focus { outline: none; border-color: var(--accent); }
 
+.anno-note {
+  margin: 0; padding: 9px 14px; font-size: 12px; line-height: 1.65;
+  color: var(--fg-muted); background: var(--accent-soft);
+  border-bottom: 1px solid var(--border);
+}
+.anno-note b { color: var(--fg); }
+
 .anno-stage {
   flex: 1; min-height: 340px; overflow: auto; padding: 16px;
   background: repeating-conic-gradient(var(--bg-panel-2) 0% 25%, var(--bg-panel) 0% 50%) 50% / 18px 18px;
