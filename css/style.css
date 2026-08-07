@@ -772,7 +772,33 @@ kbd {
   padding: 1px 6px; border-radius: 4px; font-size: 12px;
 }
 .run-substeps { padding-left: 18px; margin: 6px 0 0; font-size: 12.5px; color: var(--fg-muted); }
-.run-substeps li { margin-bottom: 4px; }
+.run-substeps li { margin-bottom: 6px; }
+.os-tabs { display: flex; gap: 5px; margin: 9px 0 8px; }
+.os-tab {
+  font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  padding: 5px 14px; border-radius: 20px;
+  border: 1px solid var(--border-strong); background: var(--bg-panel); color: var(--fg-muted);
+}
+.os-tab:hover { background: var(--bg-panel-2); }
+.os-tab.active { background: var(--accent); color: #fff; border-color: transparent; }
+.os-body[hidden] { display: none; }
+.os-warn {
+  background: var(--warn-soft); border-radius: var(--radius);
+  padding: 8px 12px; font-size: 12.5px; margin: 0 0 8px;
+}
+html[data-theme="dark"] .os-warn { color: var(--fg); }
+.cmd-row {
+  display: flex; gap: 7px; align-items: stretch; margin: 6px 0 0;
+}
+/* .run-steps code より詳細度を上げる（同じ要素に別の見た目が当たるため） */
+.cmd-row code.cmd {
+  flex: 1; min-width: 0; background: var(--code-bg); color: var(--code-fg);
+  border: none;
+  font-family: var(--mono); font-size: 12.5px;
+  padding: 9px 12px; border-radius: var(--radius-sm);
+  overflow-x: auto; white-space: nowrap; user-select: all;
+}
+.cmd-row .btn { flex-shrink: 0; }
 .run-manual {
   border: 1px solid var(--border); border-radius: var(--radius);
   padding: 9px 13px; margin-bottom: 12px; background: var(--bg-panel-2);

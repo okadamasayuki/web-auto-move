@@ -380,8 +380,39 @@ python scraper.py</pre>
         PCに小さな「実行環境」（Pythonファイル1個）を置いて、そこと通信して実行します。<b>初回だけ以下の準備が必要です。</b></p>
         <ol class="run-steps">
           <li><b>Python を入れる</b>（済んでいれば飛ばす）… <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a> から。Windowsは「Add python.exe to PATH」にチェック。</li>
-          <li><b><a href="wam_runner.py" download class="bm-link">📥 実行環境ファイルをダウンロード</a></b>（wam_runner.py）</li>
-          <li>ダウンロードしたファイルを<b>ダブルクリック</b>（またはターミナルで <code>python wam_runner.py</code>）。
+          <li><b><a href="wam_runner.py" download class="bm-link">📥 実行環境ファイルをダウンロード</a></b>（wam_runner.py／ダウンロードフォルダに入ります）</li>
+          <li>
+            <b>実行環境を起動する</b>
+            <div class="os-tabs" id="osTabs">
+              <button class="os-tab" data-os="mac">🍎 Mac</button>
+              <button class="os-tab" data-os="win">🪟 Windows</button>
+            </div>
+
+            <div class="os-body" data-os="mac">
+              <p class="os-warn">⚠ <b>ダブルクリックはしないでください。</b>Mac では Xcode やテキストエディタで「開かれる」だけで、実行されません。下の方法で起動します。</p>
+              <ol class="run-substeps">
+                <li><b>ターミナルを開く</b>：<kbd>⌘</kbd>+<kbd>Space</kbd> → <b>ターミナル</b> と入力 → <kbd>Enter</kbd></li>
+                <li>下のコマンドを<b>コピーして貼り付け</b>、<kbd>Enter</kbd>
+                  <div class="cmd-row">
+                    <code class="cmd" id="cmdMac">python3 ~/Downloads/wam_runner.py</code>
+                    <button class="btn btn-sm" data-copy="cmdMac">📋 コピー</button>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
+            <div class="os-body" data-os="win" hidden>
+              <ol class="run-substeps">
+                <li>ダウンロードした <b>wam_runner.py をダブルクリック</b>（たいていこれで開きます）</li>
+                <li>開かない・すぐ閉じる場合は、<b>コマンドプロンプト</b>を開いて下を貼り付け → <kbd>Enter</kbd>
+                  <div class="cmd-row">
+                    <code class="cmd" id="cmdWin">python "%USERPROFILE%\Downloads\wam_runner.py"</code>
+                    <button class="btn btn-sm" data-copy="cmdWin">📋 コピー</button>
+                  </div>
+                </li>
+              </ol>
+            </div>
+
             <ul class="run-substeps">
               <li>初回だけ「いまインストールしますか？ [y/N]」と聞かれます → <b><code>y</code> と打って Enter</b>。数分かかります。</li>
               <li>準備ができると<b>黒い画面が開いたまま</b>になり、<b>自動でこのページが開き直されて接続されます</b>。あとは「▶ このフローを実行」を押すだけです。</li>

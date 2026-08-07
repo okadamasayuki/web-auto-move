@@ -259,11 +259,60 @@
       btnStop: U.$('#btnRunStop'),
       btnReport: U.$('#btnRunReport')
     };
+    initOsTabs();
     dom.btnConnect.addEventListener('click', connect);
     dom.token.addEventListener('keydown', e => { if (e.key === 'Enter') connect(); });
     dom.btnRun.addEventListener('click', runFlow);
     dom.btnStop.addEventListener('click', stopFlow);
     dom.btnReport.addEventListener('click', openReport);
+  }
+
+  /* ══════════════ OS別の起動手順 ══════════════ */
+  function detectOs() {
+    const p = (navigator.userAgentData && navigator.userAgentData.platform) ||
+              navigator.platform || navigator.userAgent || '';
+    return /mac|iphone|ipad/i.test(p) ? 'mac' : 'win';
+  }
+
+  function showOs(os) {
+    U.$$('.os-tab').forEach(b => b.classList.toggle('active', b.dataset.os === os));
+    U.$$('.os-body').forEach(b => { b.hidden = b.dataset.os !== os; });
+  }
+
+  function initOsTabs() {
+    U.$$('.os-tab').forEach(b => {
+      b.addEventListener('click', () => showOs(b.dataset.os));
+    });
+    showOs(detectOs());
+
+    U.$$('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const el = document.getElementById(btn.dataset.copy);
+        if (!el) return;
+        const text = el.textContent;
+        const done = () => {
+          const old = btn.textContent;
+          btn.textContent = '✅ コピーしました';
+          setTimeout(() => { btn.textContent = old; }, 1800);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, () => selectText(el));
+        } else {
+          selectText(el);
+        }
+      });
+    });
+  }
+
+  function selectText(el) {
+    try {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      const s = getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      U.toast('選択しました。Ctrl+C（Macは⌘+C）でコピーしてください', 'info', 3500);
+    } catch (e) { /* 無視 */ }
   }
 
   /**
