@@ -28,7 +28,15 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # ビルド工程は無し。素の HTML / CSS / JS をそのまま配信する。
+      # ブラウザが古いCSS/JSを使い続けないよう、コミットIDを付けて配信する。
+      # （ビルド工程は無し。index.html の ?v=dev を置換するだけ）
+      - name: Stamp cache-busting version
+        run: |
+          VER="${GITHUB_SHA::7}"
+          sed -i "s/?v=dev/?v=${VER}/g" index.html
+          echo "版: ${VER}  (置換 $(grep -o "?v=${VER}" index.html | wc -l) 箇所)"
+
+      # 素の HTML / CSS / JS をそのまま配信する。
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -138,6 +138,11 @@ code, kbd, pre { font-family: var(--mono); }
 .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
 .brand-text strong { font-size: 14.5px; letter-spacing: .01em; }
 .brand-text small { font-size: 10.5px; color: var(--fg-muted); }
+.build-ver {
+  font-family: var(--mono); font-size: 9.5px; color: var(--fg-faint);
+  background: var(--bg-panel-2); border-radius: 20px; padding: 0 5px; margin-left: 3px;
+  cursor: help;
+}
 
 .project-name-wrap { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .project-name {

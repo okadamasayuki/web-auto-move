@@ -6,7 +6,7 @@
 <title>Web Auto Move — スクレイピング自動生成スタジオ</title>
 <meta name="description" content="スクリーンショットに赤枠を引いて、ノードを矢印でつなぐだけで Playwright(Python) のスクレイピングコードを自動生成します。">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=dev">
 </head>
 <body>
 
@@ -16,7 +16,7 @@
     <span class="brand-mark">🕸️</span>
     <div class="brand-text">
       <strong>Web Auto Move</strong>
-      <small>スクレイピング自動生成スタジオ</small>
+      <small>スクレイピング自動生成スタジオ <span id="buildVer" class="build-ver"></span></small>
     </div>
   </div>
 
@@ -380,7 +380,7 @@ python scraper.py</pre>
         PCに小さな「実行環境」（Pythonファイル1個）を置いて、そこと通信して実行します。<b>初回だけ以下の準備が必要です。</b></p>
         <ol class="run-steps">
           <li><b>Python を入れる</b>（済んでいれば飛ばす）… <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a> から。Windowsは「Add python.exe to PATH」にチェック。</li>
-          <li><b><a href="wam_runner.py" download class="bm-link">📥 実行環境ファイルをダウンロード</a></b>（wam_runner.py／ダウンロードフォルダに入ります）</li>
+          <li><b><a href="wam_runner.py?v=dev" download class="bm-link">📥 実行環境ファイルをダウンロード</a></b>（wam_runner.py／ダウンロードフォルダに入ります）</li>
           <li>
             <b>実行環境を起動する</b>
             <div class="os-tabs" id="osTabs">
@@ -461,16 +461,16 @@ python scraper.py</pre>
 <!-- ══════════════ コンテキストメニュー ══════════════ -->
 <div class="ctx-menu" id="ctxMenu" hidden></div>
 
-<script src="js/util.js"></script>
-<script src="js/nodes.js"></script>
-<script src="js/selector.js"></script>
-<script src="js/annotator.js"></script>
-<script src="js/flow.js"></script>
-<script src="js/inspector.js"></script>
-<script src="js/codegen.js"></script>
-<script src="js/samples.js"></script>
-<script src="js/preview.js"></script>
-<script src="js/runner.js"></script>
-<script src="js/app.js"></script>
+<script src="js/util.js?v=dev"></script>
+<script src="js/nodes.js?v=dev"></script>
+<script src="js/selector.js?v=dev"></script>
+<script src="js/annotator.js?v=dev"></script>
+<script src="js/flow.js?v=dev"></script>
+<script src="js/inspector.js?v=dev"></script>
+<script src="js/codegen.js?v=dev"></script>
+<script src="js/samples.js?v=dev"></script>
+<script src="js/preview.js?v=dev"></script>
+<script src="js/runner.js?v=dev"></script>
+<script src="js/app.js?v=dev"></script>
 </body>
 </html>

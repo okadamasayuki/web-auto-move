@@ -35,6 +35,7 @@
       INSPECTOR.refresh();
     });
 
+    showBuildVersion();
     restore();
 
     // 実行環境が開いたリンクなら、コード入力なしで自動接続する
@@ -45,6 +46,23 @@
 
   function prefersDark() {
     return global.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  /**
+   * 今読み込まれている版を表示する。
+   * 「更新したのに変わらない」ときに、キャッシュか否かをここで判別できる。
+   */
+  function showBuildVersion() {
+    const el = U.$('#buildVer');
+    if (!el) return;
+    let ver = 'dev';
+    const tag = document.querySelector('script[src*="app.js"]');
+    if (tag) {
+      const m = String(tag.getAttribute('src') || '').match(/[?&]v=([^&]+)/);
+      if (m) ver = m[1];
+    }
+    el.textContent = 'v' + ver;
+    el.title = 'この画面の版。更新しても変わらないときは Ctrl+F5（Macは ⌘+Shift+R）で読み込み直してください。';
   }
 
   /* ══════════════ テーマ ══════════════ */
