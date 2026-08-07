@@ -14,6 +14,7 @@
   const NODES = global.NODES;
 
   const LS_KEY = 'wam.runner';
+  const NEED_VERSION = '1.2';   // これより古い実行環境は入れ替えてもらう
 
   const R = {
     url: 'http://127.0.0.1:8765',
@@ -72,6 +73,7 @@
       } else {
         showSetup();
       }
+      warnIfOutdated(st);
       return st;
     }).catch(err => {
       R.reachable = false;
@@ -81,6 +83,23 @@
       if (!silent) U.toast('実行環境に接続できません。wam_runner.py を起動してください', 'warn', 3500);
       throw err;
     });
+  }
+
+  /** 実行環境のファイルが古いと、直したはずの不具合が残る */
+  function warnIfOutdated(st) {
+    const v = String(st.version || '0');
+    const num = s => String(s).split('.').map(n => parseInt(n, 10) || 0);
+    const a = num(v), b = num(NEED_VERSION);
+    const old = a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]);
+    const box = U.$('#runnerOld');
+    if (!box) return;
+    box.hidden = !old;
+    if (old) {
+      box.innerHTML = '⚠ 実行環境が古い版です（' + U.escapeHtml(v) + ' → ' + NEED_VERSION + '）。<br>' +
+        '<b><a href="wam_runner.py" download>📥 ここから新しい wam_runner.py をダウンロード</a></b>し、' +
+        'ターミナルを <kbd>Ctrl</kbd>+<kbd>C</kbd> で止めてから起動し直してください。' +
+        '（接続コードの再入力や、ログインが保存されない問題が直ります）';
+    }
   }
 
   function connect() {
@@ -259,6 +278,17 @@
     }, 3000);
   }
 
+  /* 実行環境が同じURLを開き直したときは、ページが再読み込みされず
+     ハッシュだけが変わる。そのときも接続できるようにしておく。 */
+  let hashHooked = false;
+  function hookHashChange() {
+    if (hashHooked) return;
+    hashHooked = true;
+    global.addEventListener('hashchange', () => {
+      try { autoConnectFromHash(); } catch (e) { /* 無視 */ }
+    });
+  }
+
   function init() {
     if (dom) return;
     dom = {
@@ -337,6 +367,7 @@
    * コードの入力なしで自動接続する。
    */
   function autoConnectFromHash() {
+    hookHashChange();
     const hash = String(location.hash || '').replace(/^#/, '');
     if (!hash || hash.indexOf('connect=') < 0) return false;
 

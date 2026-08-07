@@ -38,7 +38,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-VERSION = "1.1"
+VERSION = "1.2"
 DEFAULT_PORT = 8765
 APP_URL = "https://okadamasayuki.github.io/web-auto-move/"
 BASE_DIR = Path.home() / "WebAutoMove"
@@ -151,6 +151,31 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         u = urlparse(self.path)
+
+        if u.path == "/":
+            # ここをブックマークしておけば、いつでもコード入力なしでつながる
+            target = f"{APP_URL}#connect={TOKEN}&port={self.server.server_address[1]}"
+            body = (
+                '<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">'
+                '<title>Web Auto Move に接続しています…</title>'
+                f'<meta http-equiv="refresh" content="0; url={target}">'
+                '<style>body{font-family:sans-serif;text-align:center;margin-top:80px;color:#333}'
+                'a{color:#4f46e5}</style></head><body>'
+                '<h2>🕸️ Web Auto Move に接続しています…</h2>'
+                f'<p>自動で移動しない場合は <a href="{target}">こちらをクリック</a></p>'
+                '</body></html>'
+            ).encode("utf-8")
+            self.send_response(200)
+            self._cors()
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            try:
+                self.wfile.write(body)
+            except Exception:
+                pass
+            return
 
         if u.path == "/status":
             # 接続確認用。秘密情報は含めない（トークン無しでも応答し、
@@ -309,16 +334,17 @@ def offer_playwright_install():
 
 
 def main():
+    global APP_URL
     port = DEFAULT_PORT
-    app_url = APP_URL
     auto_open = True
     for i, a in enumerate(sys.argv):
         if a == "--port" and i + 1 < len(sys.argv):
             port = int(sys.argv[i + 1])
         elif a == "--url" and i + 1 < len(sys.argv):
-            app_url = sys.argv[i + 1]
+            APP_URL = sys.argv[i + 1]
         elif a == "--no-open":
             auto_open = False
+    app_url = APP_URL
 
     BASE_DIR.mkdir(parents=True, exist_ok=True)
     offer_playwright_install()
@@ -356,7 +382,8 @@ def main():
     print("     接 続 コ ー ド :   " + "  ".join(TOKEN))
     print()
     print("-" * 60)
-    print(f"  アドレス   : http://127.0.0.1:{port}")
+    print(f"  ★ かんたん接続 : http://127.0.0.1:{port}")
+    print("     （ここをブックマークしておけば、コード入力は一切不要です）")
     print(f"  保存先     : {BASE_DIR}")
     print(f"  playwright : {'OK' if d['playwright'] else '未インストール'}"
           f" / Word出力: {'OK' if d['docx'] else '－'}"

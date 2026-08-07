@@ -374,6 +374,9 @@ python scraper.py</pre>
     </div>
     <div class="modal-content">
 
+      <!-- 実行環境が古いときの案内（接続の有無にかかわらず出す） -->
+      <div id="runnerOld" class="runner-old" hidden></div>
+
       <!-- 未接続：セットアップ手順 -->
       <div id="runSetup">
         <p class="modal-lead">ブラウザ単体では他のサイトの操作やフォルダへの保存ができないため、
@@ -419,9 +422,15 @@ python scraper.py</pre>
             </ul>
           </li>
         </ol>
+        <div class="easy-link">
+          🔖 <b>次回からはこれだけ：</b>
+          <a href="http://127.0.0.1:8765/" target="_blank" rel="noopener"><code>http://127.0.0.1:8765/</code></a>
+          をブックマークしておけば、実行環境を起動したあとにここを開くだけで<b>コード入力なしで接続</b>されます。
+        </div>
+
         <details class="run-manual">
           <summary>自動で接続されないとき（手で入力する）</summary>
-          <p class="field-help" style="margin-top:8px">黒い画面に大きく出ている <b>接続コード</b>（8文字）を下に入れて「接続」を押してください。ファイルを置いた場所にできる <code>接続コード.txt</code> にも同じものが書かれています。</p>
+          <p class="field-help" style="margin-top:8px">黒い画面に大きく出ている <b>接続コード</b>（8文字）を下に入れて「接続」を押してください。一度入れれば記憶されるので、次回からは不要です。</p>
           <div class="field-row">
             <div class="field field-narrow" style="flex-basis:220px">
               <label for="runnerUrl">実行環境のアドレス</label>
