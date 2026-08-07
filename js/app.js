@@ -36,6 +36,11 @@
     });
 
     restore();
+
+    // 実行環境が開いたリンクなら、コード入力なしで自動接続する
+    setTimeout(() => {
+      try { global.RUNNER.autoConnectFromHash(); } catch (e) { /* 無視 */ }
+    }, 400);
   }
 
   function prefersDark() {

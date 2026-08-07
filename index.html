@@ -381,21 +381,29 @@ python scraper.py</pre>
         <ol class="run-steps">
           <li><b>Python を入れる</b>（済んでいれば飛ばす）… <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a> から。Windowsは「Add python.exe to PATH」にチェック。</li>
           <li><b><a href="wam_runner.py" download class="bm-link">📥 実行環境ファイルをダウンロード</a></b>（wam_runner.py）</li>
-          <li>ダウンロードしたファイルを<b>ダブルクリック</b>（またはターミナルで <code>python wam_runner.py</code>）。黒い画面が開いて<b>「接続コード」</b>が表示されます。初回は playwright のインストールを聞かれるので <code>y</code> を入力。</li>
-          <li>その接続コードを下に入力して「接続」。</li>
+          <li>ダウンロードしたファイルを<b>ダブルクリック</b>（またはターミナルで <code>python wam_runner.py</code>）。
+            <ul class="run-substeps">
+              <li>初回だけ「いまインストールしますか？ [y/N]」と聞かれます → <b><code>y</code> と打って Enter</b>。数分かかります。</li>
+              <li>準備ができると<b>黒い画面が開いたまま</b>になり、<b>自動でこのページが開き直されて接続されます</b>。あとは「▶ このフローを実行」を押すだけです。</li>
+            </ul>
+          </li>
         </ol>
-        <div class="field-row">
-          <div class="field field-narrow" style="flex-basis:220px">
-            <label for="runnerUrl">実行環境のアドレス</label>
-            <input type="text" id="runnerUrl" value="http://127.0.0.1:8765" spellcheck="false">
+        <details class="run-manual">
+          <summary>自動で接続されないとき（手で入力する）</summary>
+          <p class="field-help" style="margin-top:8px">黒い画面に大きく出ている <b>接続コード</b>（8文字）を下に入れて「接続」を押してください。ファイルを置いた場所にできる <code>接続コード.txt</code> にも同じものが書かれています。</p>
+          <div class="field-row">
+            <div class="field field-narrow" style="flex-basis:220px">
+              <label for="runnerUrl">実行環境のアドレス</label>
+              <input type="text" id="runnerUrl" value="http://127.0.0.1:8765" spellcheck="false">
+            </div>
+            <div class="field">
+              <label for="runnerToken">接続コード（8文字）</label>
+              <input type="text" id="runnerToken" placeholder="例）A1B2C3D4" spellcheck="false" style="font-family:var(--mono);text-transform:uppercase">
+            </div>
+            <button class="btn btn-primary" id="btnRunnerConnect">🔌 接続</button>
           </div>
-          <div class="field">
-            <label for="runnerToken">接続コード（黒い画面に表示された8桁）</label>
-            <input type="text" id="runnerToken" placeholder="例）A1B2C3D4" spellcheck="false" style="font-family:var(--mono);text-transform:uppercase">
-          </div>
-          <button class="btn btn-primary" id="btnRunnerConnect">🔌 接続</button>
-        </div>
-        <p class="field-help">実行環境は 127.0.0.1（このPCの中）だけで待ち受け、接続コードを知らないWebページからは実行できません。黒い画面は実行中ずっと開いたままにしてください。</p>
+        </details>
+        <p class="field-help">実行環境は 127.0.0.1（このPCの中）だけで待ち受け、接続コードを知らないWebページからは実行できません。<b>黒い画面は実行が終わるまで閉じないでください。</b></p>
       </div>
 
       <!-- 接続済み：実行パネル -->

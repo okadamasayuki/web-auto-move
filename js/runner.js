@@ -266,5 +266,42 @@
     dom.btnReport.addEventListener('click', openReport);
   }
 
-  global.RUNNER = { openModal, checkStatus };
+  /**
+   * 実行環境が開いたリンク（…/#connect=コード&port=番号）を読み取り、
+   * コードの入力なしで自動接続する。
+   */
+  function autoConnectFromHash() {
+    const hash = String(location.hash || '').replace(/^#/, '');
+    if (!hash || hash.indexOf('connect=') < 0) return false;
+
+    const params = {};
+    hash.split('&').forEach(kv => {
+      const i = kv.indexOf('=');
+      if (i > 0) params[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
+    });
+    const token = String(params.connect || '').trim().toUpperCase();
+    if (!token) return false;
+
+    // アドレスバーからコードを消す（履歴に残さない）
+    try { history.replaceState(null, '', location.pathname + location.search); }
+    catch (e) { location.hash = ''; }
+
+    R.url = 'http://127.0.0.1:' + (parseInt(params.port, 10) || 8765);
+    R.token = token;
+
+    openModal();
+    dom.url.value = R.url;
+    dom.token.value = R.token;
+    checkStatus(true).then(st => {
+      if (st.auth === true) {
+        U.lsSet(LS_KEY, { url: R.url, token: R.token });
+        U.toast('実行環境に自動で接続しました。「▶ このフローを実行」で開始できます', 'ok', 4500);
+      }
+    }).catch(() => {
+      U.toast('実行環境に接続できませんでした。黒い画面が開いたままか確認してください', 'warn', 4000);
+    });
+    return true;
+  }
+
+  global.RUNNER = { openModal, checkStatus, autoConnectFromHash };
 })(window);

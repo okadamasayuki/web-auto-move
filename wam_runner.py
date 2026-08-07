@@ -32,13 +32,15 @@ import subprocess
 import sys
 import threading
 import time
+import webbrowser
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
-VERSION = "1.0"
+VERSION = "1.1"
 DEFAULT_PORT = 8765
+APP_URL = "https://okadamasayuki.github.io/web-auto-move/"
 BASE_DIR = Path.home() / "WebAutoMove"
 TOKEN = secrets.token_hex(4).upper()          # 8桁の接続コード
 
@@ -276,9 +278,15 @@ def offer_playwright_install():
 
 def main():
     port = DEFAULT_PORT
+    app_url = APP_URL
+    auto_open = True
     for i, a in enumerate(sys.argv):
         if a == "--port" and i + 1 < len(sys.argv):
             port = int(sys.argv[i + 1])
+        elif a == "--url" and i + 1 < len(sys.argv):
+            app_url = sys.argv[i + 1]
+        elif a == "--no-open":
+            auto_open = False
 
     BASE_DIR.mkdir(parents=True, exist_ok=True)
     offer_playwright_install()
@@ -290,23 +298,51 @@ def main():
         server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         port = server.server_address[1]
 
+    # 接続用リンク。#以降はサーバーに送られないので、コードが外に漏れることはない
+    connect_url = f"{app_url}#connect={TOKEN}&port={port}"
+
+    # コードを見失っても大丈夫なように、ファイルにも残しておく
+    try:
+        here = Path(__file__).resolve().parent
+        (here / "接続コード.txt").write_text(
+            "Web Auto Move 実行環境\n\n"
+            f"接続コード : {TOKEN}\n"
+            f"アドレス   : http://127.0.0.1:{port}\n\n"
+            "この画面を閉じてしまった場合は、下のリンクをブラウザで開くと\n"
+            "自動で接続されます（コードの入力は不要です）。\n\n"
+            f"{connect_url}\n",
+            encoding="utf-8")
+    except Exception:
+        pass
+
     d = deps()
     print()
-    print("=" * 58)
+    print("=" * 60)
     print("  🕸️  Web Auto Move 実行環境が起動しました")
-    print("=" * 58)
+    print("=" * 60)
+    print()
+    print("     接 続 コ ー ド :   " + "  ".join(TOKEN))
+    print()
+    print("-" * 60)
     print(f"  アドレス   : http://127.0.0.1:{port}")
-    print(f"  接続コード : {TOKEN}")
     print(f"  保存先     : {BASE_DIR}")
     print(f"  playwright : {'OK' if d['playwright'] else '未インストール'}"
           f" / Word出力: {'OK' if d['docx'] else '－'}"
           f" / Excel出力: {'OK' if d['openpyxl'] else '－'}")
-    print("-" * 58)
-    print("  Web Auto Move の「▶ 実行」画面で、上の接続コードを")
-    print("  入力してください。この画面は開いたままにします。")
-    print("  終了するには Ctrl+C を押してください。")
-    print("=" * 58)
+    print("-" * 60)
+    if auto_open:
+        print("  ブラウザを開いて自動で接続します。")
+        print("  （開かない場合は、上の接続コードを画面に入力してください）")
+    else:
+        print("  Web Auto Move の「▶ 実行」画面で、上の接続コードを入力してください。")
     print()
+    print("  ★ この黒い画面は閉じないでください（閉じると実行できません）")
+    print("     終了するときは Ctrl+C を押してください。")
+    print("=" * 60)
+    print()
+
+    if auto_open:
+        threading.Timer(1.0, lambda: webbrowser.open(connect_url)).start()
 
     try:
         server.serve_forever()
