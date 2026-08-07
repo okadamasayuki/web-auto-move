@@ -199,6 +199,53 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
+        if u.path == "/login-help":
+            body = (
+                '<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">'
+                '<title>このブラウザでログインしてください</title><style>'
+                'body{font-family:-apple-system,"Hiragino Sans",Meiryo,sans-serif;'
+                'max-width:640px;margin:60px auto;padding:0 20px;line-height:1.9;color:#1a2233}'
+                'h1{font-size:22px}ol{padding-left:22px}li{margin-bottom:10px}'
+                '.box{background:#eef0fe;border-radius:10px;padding:14px 18px;margin:18px 0}'
+                '.note{color:#667;font-size:13px}</style></head><body>'
+                '<h1>🔐 このブラウザでログインしてください</h1>'
+                '<div class="box">これは <b>Web Auto Move が操作するためのChrome</b> です。<br>'
+                'ふだんのChromeとは別のプロフィールなので、<b>最初だけログインが必要</b>です。</div>'
+                '<ol>'
+                '<li>右のタブ（自動化したいサイト）に切り替えます。'
+                '<span class="note">開いていなければ、アドレス欄にURLを入れてください。</span></li>'
+                '<li>そこで<b>ふだんどおりログイン</b>します。</li>'
+                '<li>ログインできたら、<b>このウィンドウは閉じずにそのまま</b>にして、'
+                'Web Auto Move に戻り「▶ このフローを実行」を押します。</li>'
+                '</ol>'
+                '<p class="note">※ 一度ログインすれば、次回からはこの手順は不要です'
+                '（このウィンドウを閉じてしまった場合は、もう一度'
+                '「🌐 ログイン用ブラウザを開く」を押してください）。</p>'
+                '</body></html>'
+            ).encode("utf-8")
+            self.send_response(200)
+            self._cors()
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            try:
+                self.wfile.write(body)
+            except Exception:
+                pass
+            return
+
+        if u.path == "/chrome-status":
+            # ログイン用ブラウザが「つなげる状態」で動いているか
+            port = int(parse_qs(u.query).get("port", ["9222"])[0] or 9222)
+            alive = False
+            try:
+                import socket
+                with socket.create_connection(("127.0.0.1", port), timeout=1):
+                    alive = True
+            except Exception:
+                alive = False
+            return self._json(200, {"alive": alive, "port": port})
+
         if u.path == "/status":
             # 接続確認用。秘密情報は含めない（トークン無しでも応答し、
             # トークンが合っているかだけ auth で返す）
@@ -332,12 +379,18 @@ class Handler(BaseHTTPRequestHandler):
             if not exe:
                 return self._json(404, {
                     "error": "Google Chrome が見つかりませんでした。インストールしてから、もう一度お試しください。"})
+            # 真っ白な about:blank ではなく、これから自動化したいサイトを直接開く。
+            # 何をすればよいか分かるように、案内ページも一緒に開く。
+            my_port = self.server.server_address[1]
+            target = str(payload.get("url") or "").strip()
+            if not (target.startswith("http://") or target.startswith("https://")):
+                target = f"http://127.0.0.1:{my_port}/login-help"
+            open_urls = [target]
             try:
                 subprocess.Popen(
                     [exe, f"--remote-debugging-port={port}",
                      f"--user-data-dir={prof}",
-                     "--no-first-run", "--no-default-browser-check",
-                     "about:blank"],
+                     "--no-first-run", "--no-default-browser-check"] + open_urls,
                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                     stdin=subprocess.DEVNULL)
             except Exception as ex:

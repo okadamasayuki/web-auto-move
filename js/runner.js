@@ -178,6 +178,32 @@
       return;
     }
 
+    // 「自分のChromeにつなぐ」設定なら、そのブラウザが開いているか先に確かめる
+    if (startCfg().connect_mode === 'cdp') {
+      dom.log.textContent = '';
+      appendLog('🔎 ログイン用ブラウザが開いているか確認しています…\n');
+      api('/chrome-status?port=' + cdpPort())
+        .then(res => {
+          if (res.alive) {
+            doRun();
+          } else {
+            appendLog('⛔ ログイン用ブラウザが見つかりません。\n' +
+              '　 このフローは「自分のChromeにつないで動かす」設定です。\n' +
+              '　 先に下の「🌐 ログイン用ブラウザを開く」を押し、\n' +
+              '　 開いたウィンドウで対象サイトにログインしてから、もう一度実行してください。\n');
+            U.toast('先に「🌐 ログイン用ブラウザを開く」を押してログインしてください', 'warn', 6000);
+            dom.btnLaunchChrome.classList.add('need-attention');
+            setTimeout(() => dom.btnLaunchChrome.classList.remove('need-attention'), 6000);
+          }
+        })
+        .catch(() => doRun());   // 確認できないときは、とりあえず実行してみる
+      return;
+    }
+    doRun();
+  }
+
+  function doRun() {
+    const gen = CODEGEN.generate(FLOW.graph);
     dom.log.textContent = '';
     appendLog('▶ 実行環境へ送信しています…\n');
     setRunning(true);
@@ -214,13 +240,30 @@
   }
 
   /** ログイン用の（普段使いの）Chrome を、つなげる状態で開く */
+  /** 「自分のChromeにつなぐ」設定のポート番号 */
+  function cdpPort() {
+    const m = String(startCfg().cdp_url || '').match(/:(\d+)/);
+    return m ? parseInt(m[1], 10) : 9222;
+  }
+
+  /** 開始ノードの設定を取り出す */
+  function startCfg() {
+    const n = (FLOW.graph.nodes || []).find(x => x.type === 'start');
+    return (n && n.data) || {};
+  }
+
   function launchChrome() {
+    const cfg = startCfg();
     dom.btnLaunchChrome.disabled = true;
-    api('/launch-chrome', { method: 'POST', body: { port: 9222 }, timeout: 15000 })
+    api('/launch-chrome', {
+      method: 'POST',
+      body: { port: cdpPort(), url: cfg.url || '' },
+      timeout: 15000
+    })
       .then(res => {
         appendLog('🌐 ログイン用の Chrome を開きました。\n' +
-          '　 そのウィンドウで対象サイトにログインしてから、\n' +
-          '　 開始ノードの「どのブラウザで動かすか」を「自分のChromeにつないで動かす」にして実行してください。\n');
+          '　 開いたウィンドウで対象サイトにログインしてください。\n' +
+          '　 ログインできたら、そのウィンドウは閉じずに「▶ このフローを実行」を押します。\n');
         U.toast('ログイン用ブラウザを開きました。そこでログインしてください', 'ok', 5000);
       })
       .catch(err => {

@@ -804,6 +804,14 @@ html[data-theme="dark"] .os-warn { color: var(--fg); }
   overflow-x: auto; white-space: nowrap; user-select: all;
 }
 .cmd-row .btn { flex-shrink: 0; }
+.need-attention {
+  animation: attention 0.55s ease 0s 4;
+  box-shadow: 0 0 0 3px var(--warn-soft);
+}
+@keyframes attention {
+  0%, 100% { transform: none; }
+  50% { transform: scale(1.06); }
+}
 .runner-old {
   background: var(--warn-soft); border-radius: var(--radius);
   padding: 10px 14px; margin-bottom: 12px; font-size: 12.5px; line-height: 1.7;
